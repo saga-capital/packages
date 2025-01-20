@@ -8,7 +8,10 @@ part of '../google_maps_flutter.dart';
 
 /// Controller for a single GoogleMap instance running on the host platform.
 class GoogleMapController {
-  GoogleMapController._(this._googleMapState, {required this.mapId}) {
+  GoogleMapController._(
+    this._googleMapState, {
+    required this.mapId,
+  }) {
     _connectStreams(mapId);
   }
 
@@ -32,8 +35,21 @@ class GoogleMapController {
     CameraPosition initialCameraPosition,
     _GoogleMapState googleMapState,
   ) async {
-    await GoogleMapsFlutterPlatform.instance.init(id);
-    return GoogleMapController._(googleMapState, mapId: id);
+    await GoogleMapsFlutterPlatform.instance.init(
+      id,
+      initMapObject: MapObjects(
+        clusterManagers: googleMapState._clusterManagers.values.toSet(),
+        circles: googleMapState._circles.values.toSet(),
+        heatmaps: googleMapState._heatmaps.values.toSet(),
+        markers: googleMapState._markers.values.toSet(),
+        polygons: googleMapState._polygons.values.toSet(),
+        polylines: googleMapState._polylines.values.toSet(),
+      ),
+    );
+    return GoogleMapController._(
+      googleMapState,
+      mapId: id,
+    );
   }
 
   final _GoogleMapState _googleMapState;

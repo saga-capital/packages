@@ -8,9 +8,12 @@
 @JS()
 library;
 
+import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:google_maps/google_maps.dart' as gmaps;
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import '../google_maps_flutter_web.dart';
 
 /// A typedef representing a callback function for handling cluster tap events.
 typedef ClusterClickHandler =
@@ -27,11 +30,12 @@ extension type MarkerClustererOptions._(JSObject _) implements JSObject {
     gmaps.Map? map,
     List<gmaps.Marker>? markers,
     ClusterClickHandler? onClusterClick,
+    CustomClusterRenderer? renderer,
   }) => MarkerClustererOptions._js(
     map: map as JSAny?,
     markers: markers?.cast<JSAny>().toJS ?? JSArray<JSAny>(),
-    onClusterClick:
-        onClusterClick != null
+    renderer: renderer,
+        onClusterClick: onClusterClick != null
             ? ((JSAny event, MarkerClustererCluster cluster, JSAny map) =>
                     onClusterClick(
                       event as gmaps.MapMouseEvent,
@@ -46,6 +50,7 @@ extension type MarkerClustererOptions._(JSObject _) implements JSObject {
     JSAny? map,
     JSArray<JSAny> markers,
     JSFunction? onClusterClick,
+    CustomClusterRenderer? renderer,
   });
 
   /// Returns the [gmaps.Map] object.
@@ -158,10 +163,29 @@ extension type MarkerClusterer._(JSObject _) implements JSObject {
 MarkerClusterer createMarkerClusterer(
   gmaps.Map map,
   ClusterClickHandler onClusterClickHandler,
+  {ClusterIconRenderer? iconRenderer}
 ) {
+    gmaps.Map map, ClusterClickHandler onClusterClickHandler,
+    {ClusterIconRenderer? iconRenderer}) {
+  JSPromise<JSAny?> generator(JSNumber count) {
+    final Completer<JSAny?> completer = Completer<JSAny?>();
+
+    iconRenderer?.call(count.toDartInt).then((BitmapDescriptor bitmap) {
+      completer.complete(gmIconFromBitmapDescriptor(bitmap));
+    });
+
+    return completer.future.toJS;
+  }
+
   final MarkerClustererOptions options = MarkerClustererOptions(
     map: map,
     onClusterClick: onClusterClickHandler,
+    renderer: CustomClusterRenderer(generator.toJS),
   );
+
   return MarkerClusterer(options);
+}
+
+extension type CustomClusterRenderer._(JSObject _) implements JSObject {
+  external factory CustomClusterRenderer([JSFunction? iconGenerator]);
 }

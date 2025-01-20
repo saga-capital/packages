@@ -49,6 +49,7 @@ class ClusterManagersController extends GeometryController {
         gmaps.Map map,
       ) =>
           _clusterClicked(clusterManager.clusterManagerId, event, cluster, map),
+      // iconRenderer: clusterManager.iconRenderer,
     );
 
     _clusterManagerIdToMarkerClusterer[clusterManager.clusterManagerId] =
