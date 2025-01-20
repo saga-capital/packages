@@ -2570,6 +2570,8 @@ abstract class MapsCallbackApi {
   /// Called when a ground overlay is tapped.
   void onGroundOverlayTap(String groundOverlayId);
 
+  Future<PlatformBitmap?> getBitmapForCluster(String clusterId, int count);
+
   /// Called to get data for a map tile.
   Future<PlatformTile> getTileOverlayTile(
       String tileOverlayId, PlatformPoint location, int zoom);
@@ -3010,6 +3012,34 @@ abstract class MapsCallbackApi {
           } catch (e) {
             return wrapResponse(
                 error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.google_maps_flutter_android.MapsCallbackApi.getBitmapForCluster$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.google_maps_flutter_android.MapsCallbackApi.getBitmapForCluster was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final String? arg_clusterId = (args[0] as String?);
+          assert(arg_clusterId != null,
+          'Argument for dev.flutter.pigeon.google_maps_flutter_android.MapsCallbackApi.getBitmapForCluster was null, expected non-null String.');
+          final int? arg_count = (args[1] as int?);
+          assert(arg_count != null,
+          'Argument for dev.flutter.pigeon.google_maps_flutter_android.MapsCallbackApi.getBitmapForCluster was null, expected non-null int.');
+          try {
+            final PlatformBitmap? output = await api.getBitmapForCluster(arg_clusterId!, arg_count!);
+            return wrapResponse(result: output);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }

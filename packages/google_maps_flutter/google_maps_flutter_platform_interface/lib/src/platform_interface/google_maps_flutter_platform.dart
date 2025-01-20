@@ -28,6 +28,8 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
+  static MapObjects? initMapObjects;
+
   static GoogleMapsFlutterPlatform _instance = MethodChannelGoogleMapsFlutter();
 
   /// The default instance of [GoogleMapsFlutterPlatform] to use.
@@ -45,7 +47,7 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
   /// /// Initializes the platform interface with [id].
   ///
   /// This method is called when the plugin is first initialized.
-  Future<void> init(int mapId) {
+  Future<void> init(int mapId,{MapObjects? initMapObject}) {
     throw UnimplementedError('init() has not been implemented.');
   }
 

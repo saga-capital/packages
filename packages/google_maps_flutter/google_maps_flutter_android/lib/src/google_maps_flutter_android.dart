@@ -93,6 +93,9 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
   final Map<int, Map<TileOverlayId, TileOverlay>> _tileOverlays =
       <int, Map<TileOverlayId, TileOverlay>>{};
 
+  final Map<int, Map<ClusterManagerId, ClusterManager>> _clusterManagers =
+      <int, Map<ClusterManagerId, ClusterManager>>{};
+
   /// Returns the handler for [mapId], creating it if it doesn't already exist.
   @visibleForTesting
   HostMapMessageHandler ensureHandlerInitialized(int mapId) {
@@ -101,6 +104,11 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
       handler = HostMapMessageHandler(
         mapId,
         _mapEventStreamController,
+        clusterManagerProvider: (ClusterManagerId clusterManagerId) {
+          final Map<ClusterManagerId, ClusterManager>? clusterManagersForMap =
+              _clusterManagers[mapId];
+          return clusterManagersForMap?[clusterManagerId];
+        },
         tileOverlayProvider: (TileOverlayId tileOverlayId) {
           final Map<TileOverlayId, TileOverlay>? tileOverlaysForMap =
               _tileOverlays[mapId];
@@ -125,9 +133,11 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
   }
 
   @override
-  Future<void> init(int mapId) {
+  Future<void> init(int mapId, {MapObjects? initMapObject}) {
     ensureHandlerInitialized(mapId);
     final MapsApi hostApi = ensureApiInitialized(mapId);
+    _clusterManagers[mapId] =
+        keyByClusterManagerId(initMapObject?.clusterManagers ?? {});
     return hostApi.waitForMap();
   }
 
@@ -343,6 +353,8 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
     ClusterManagerUpdates clusterManagerUpdates, {
     required int mapId,
   }) {
+    _clusterManagers[mapId] =
+        keyByClusterManagerId(clusterManagerUpdates.clusterManagersToAdd);
     return _hostApi(mapId).updateClusterManagers(
       clusterManagerUpdates.clusterManagersToAdd
           .map(_platformClusterManagerFromClusterManager)
@@ -1032,6 +1044,7 @@ class HostMapMessageHandler implements MapsCallbackApi {
     this.mapId,
     this.streamController, {
     required this.tileOverlayProvider,
+    required this.clusterManagerProvider,
   }) {
     MapsCallbackApi.setUp(this, messageChannelSuffix: mapId.toString());
   }
@@ -1050,6 +1063,9 @@ class HostMapMessageHandler implements MapsCallbackApi {
 
   /// The callback to get a tile overlay for the corresponding map.
   final TileOverlay? Function(TileOverlayId tileOverlayId) tileOverlayProvider;
+
+  final ClusterManager? Function(ClusterManagerId clusterManagerId)
+      clusterManagerProvider;
 
   @override
   Future<PlatformTile> getTileOverlayTile(
@@ -1162,6 +1178,26 @@ class HostMapMessageHandler implements MapsCallbackApi {
   void onTap(PlatformLatLng position) {
     streamController
         .add(MapTapEvent(mapId, _latLngFromPlatformLatLng(position)));
+  }
+
+  @override
+  Future<PlatformBitmap?> getBitmapForCluster(
+    String clusterId,
+    int count,
+  ) async {
+    final ClusterManager? clusterManager = clusterManagerProvider(ClusterManagerId(clusterId));
+
+    if (clusterManager != null && clusterManager.iconRenderer != null) {
+      final BitmapDescriptor bitmap = await clusterManager.iconRenderer!.call(count);
+
+      return GoogleMapsFlutterAndroid.platformBitmapFromBitmapDescriptor(
+        bitmap,
+      );
+    }
+
+    return GoogleMapsFlutterAndroid.platformBitmapFromBitmapDescriptor(
+      BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+    );
   }
 }
 
