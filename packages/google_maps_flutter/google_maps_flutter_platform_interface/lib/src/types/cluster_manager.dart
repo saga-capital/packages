@@ -5,6 +5,8 @@
 import 'package:flutter/foundation.dart' show immutable;
 import 'types.dart';
 
+typedef ClusterIconRenderer = Future<BitmapDescriptor> Function(int count);
+
 /// Uniquely identifies a [ClusterManager] among [GoogleMap] clusters.
 ///
 /// This does not have to be globally unique, only unique among the list.
@@ -19,10 +21,16 @@ class ClusterManagerId extends MapsObjectId<ClusterManager> {
 @immutable
 class ClusterManager implements MapsObject<ClusterManager> {
   /// Creates an immutable object for managing clustering for set of markers.
-  const ClusterManager({required this.clusterManagerId, this.onClusterTap});
+  const ClusterManager({
+    required this.clusterManagerId,
+    this.iconRenderer,
+    this.onClusterTap,
+  });
 
   /// Uniquely identifies a [ClusterManager].
   final ClusterManagerId clusterManagerId;
+
+  final ClusterIconRenderer? iconRenderer;
 
   @override
   ClusterManagerId get mapsId => clusterManagerId;
@@ -36,6 +44,7 @@ class ClusterManager implements MapsObject<ClusterManager> {
     return ClusterManager(
       clusterManagerId: clusterManagerId,
       onClusterTap: onClusterTapParam ?? onClusterTap,
+      iconRenderer: this.iconRenderer,
     );
   }
 
