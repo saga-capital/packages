@@ -37,7 +37,7 @@ class GoogleMapsPlugin extends GoogleMapsFlutterPlatform {
   }
 
   @override
-  Future<void> init(int mapId) async {
+  Future<void> init(int mapId, {MapObjects? initMapObject}) async {
     // The internal instance of our controller is initialized eagerly in `buildView`,
     // so we don't have to do anything in this method, which is left intentionally
     // blank.

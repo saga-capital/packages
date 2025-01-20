@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -7601,6 +7602,28 @@ public class Messages {
                 result.success();
               }
             } else {
+              result.error(createConnectionError(channelName));
+            }
+          });
+    }
+    public void getBitmapForCluster(@NonNull String clusterIdArg, @NonNull Long countArg, @NonNull NullableResult<PlatformBitmap> result) {
+      final String channelName = "dev.flutter.pigeon.google_maps_flutter_android.MapsCallbackApi.getBitmapForCluster" + messageChannelSuffix;
+      BasicMessageChannel<Object> channel =
+          new BasicMessageChannel<>(
+              binaryMessenger, channelName, getCodec());
+      channel.send(
+          new ArrayList<>(Arrays.asList(clusterIdArg, countArg)),
+          channelReply -> {
+            if (channelReply instanceof List) {
+              List<Object> listReply = (List<Object>) channelReply;
+              if (listReply.size() > 1) {
+                result.error(new FlutterError((String) listReply.get(0), (String) listReply.get(1), listReply.get(2)));
+              } else {
+                @SuppressWarnings("ConstantConditions")
+                PlatformBitmap output = (PlatformBitmap) listReply.get(0);
+                result.success(output);
+              }
+            }  else {
               result.error(createConnectionError(channelName));
             }
           });

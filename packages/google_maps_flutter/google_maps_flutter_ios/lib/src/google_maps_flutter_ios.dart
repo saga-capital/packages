@@ -111,7 +111,7 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
   }
 
   @override
-  Future<void> init(int mapId) {
+  Future<void> init(int mapId, {MapObjects? initMapObject}) {
     ensureHandlerInitialized(mapId);
     final MapsApi hostApi = ensureApiInitialized(mapId);
     return hostApi.waitForMap();
