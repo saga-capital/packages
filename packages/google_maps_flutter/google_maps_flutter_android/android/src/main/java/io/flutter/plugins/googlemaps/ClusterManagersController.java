@@ -4,10 +4,17 @@
 
 package io.flutter.plugins.googlemaps;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.maps.android.clustering.Cluster;
@@ -16,11 +23,13 @@ import com.google.maps.android.clustering.ClusterManager;
 import com.google.maps.android.clustering.view.DefaultClusterRenderer;
 import com.google.maps.android.collections.MarkerManager;
 import io.flutter.plugins.googlemaps.Messages.MapsCallbackApi;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 /**
  * Controls cluster managers and exposes interfaces for adding and removing cluster items for
  * specific cluster managers.
@@ -85,14 +94,31 @@ class ClusterManagersController
     }
   }
 
-  /** Adds new ClusterManager to the controller. */
+
+
+
+  @SuppressLint("NewApi")
   void addClusterManager(String clusterManagerId) {
+
     ClusterManager<MarkerBuilder> clusterManager =
-        new ClusterManager<MarkerBuilder>(context, googleMap, markerManager);
-    ClusterRenderer<MarkerBuilder> clusterRenderer =
-        new ClusterRenderer<MarkerBuilder>(context, googleMap, clusterManager, this);
-    clusterManager.setRenderer(clusterRenderer);
-    initListenersForClusterManager(clusterManager, this, clusterItemClickListener);
+            new ClusterManager<MarkerBuilder>(context, googleMap, markerManager);
+
+
+    AsyncClusterIconRenderer<MarkerBuilder> renderer = new AsyncClusterIconRenderer<>(
+            context,
+            googleMap,
+            clusterManager,
+            clusterManagerId,
+            ClusterManagersController.this,
+            (clusterId, count, result) -> flutterApi.getBitmapForCluster(clusterId, (long) count, result)
+    );
+
+
+
+    initListenersForClusterManager(clusterManager,
+            ClusterManagersController.this,
+            clusterItemClickListener);
+    clusterManager.setRenderer(renderer);
     clusterManagerIdToManager.put(clusterManagerId, clusterManager);
   }
 
@@ -202,10 +228,10 @@ class ClusterManagersController
     private final ClusterManagersController clusterManagersController;
 
     public ClusterRenderer(
-        Context context,
-        GoogleMap map,
-        ClusterManager<T> clusterManager,
-        ClusterManagersController clusterManagersController) {
+            Context context,
+            GoogleMap map,
+            ClusterManager<T> clusterManager,
+            ClusterManagersController clusterManagersController) {
       super(context, map, clusterManager);
       this.clusterManagersController = clusterManagersController;
     }
@@ -229,4 +255,121 @@ class ClusterManagersController
   public interface OnClusterItemRendered<T extends ClusterItem> {
     void onClusterItemRendered(@NonNull T item, @NonNull Marker marker);
   }
+
+  /**
+   * A cluster renderer that supports asynchronous loading of cluster icons
+   * while keeping default behavior for individual markers.
+   */
+  private static class AsyncClusterIconRenderer<T extends MarkerBuilder> extends ClusterRenderer<T> {
+    private final Context context;
+    private final String clusterId;
+    private final ClusterIconProvider mClusterIconProvider;
+    private final Handler mMainHandler;
+    private final ConcurrentHashMap<String, BitmapDescriptor> mClusterIconCache;
+
+    private interface ClusterIconProvider {
+      void getBitmapForCluster(@NonNull String clusterId,
+                               @NonNull int count,
+                               @NonNull Messages.NullableResult<Messages.PlatformBitmap> result);
+    }
+
+    private interface IconCallback {
+      void onIconLoaded(BitmapDescriptor icon);
+    }
+
+    public AsyncClusterIconRenderer(Context context,
+                                    GoogleMap map,
+                                    ClusterManager<T> clusterManager,
+                                    String clusterId,
+                                    ClusterManagersController clusterManagersController,
+                                   AsyncClusterIconRenderer.ClusterIconProvider iconProvider) {
+      super(context, map, clusterManager,clusterManagersController);
+      mClusterIconProvider = iconProvider;
+      this.context = context;
+      this.clusterId = clusterId;
+
+      mMainHandler = new Handler(Looper.getMainLooper());
+      mClusterIconCache = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    protected void onBeforeClusterRendered(@NonNull Cluster<T> cluster,
+                                           @NonNull MarkerOptions markerOptions) {
+      String cacheKey = getClusterCacheKey(cluster);
+      BitmapDescriptor cachedIcon = mClusterIconCache.get(cacheKey);
+
+      if (cachedIcon != null) {
+        markerOptions.icon(cachedIcon);
+      } else {
+        super.onBeforeClusterRendered(cluster, markerOptions);
+
+        loadClusterIcon(cluster, icon -> {
+          if (icon != null) {
+            mClusterIconCache.put(cacheKey, icon);
+            mMainHandler.post(() -> {
+              Marker marker = getMarker(cluster);
+              if (marker != null) {
+                marker.setIcon(icon);
+              }
+            });
+          }
+        });
+      }
+    }
+
+    @Override
+    protected void onClusterUpdated(@NonNull Cluster<T> cluster, @NonNull Marker marker) {
+      String cacheKey = getClusterCacheKey(cluster);
+      BitmapDescriptor cachedIcon = mClusterIconCache.get(cacheKey);
+
+      if (cachedIcon != null) {
+        marker.setIcon(cachedIcon);
+      } else {
+        super.onClusterUpdated(cluster, marker);
+
+        loadClusterIcon(cluster, icon -> {
+          if (icon != null) {
+            mClusterIconCache.put(cacheKey, icon);
+            mMainHandler.post(() -> marker.setIcon(icon));
+          }
+        });
+      }
+    }
+
+    private String getClusterCacheKey(Cluster<T> cluster) {
+      return cluster.getPosition().toString() + "_" + cluster.getSize();
+    }
+
+    private void loadClusterIcon(Cluster<T> cluster, IconCallback callback) {
+      int count = cluster.getSize();
+
+      mClusterIconProvider.getBitmapForCluster(
+              clusterId,
+              count,
+              new Messages.NullableResult<Messages.PlatformBitmap>() {
+                @Override
+                public void success(Messages.PlatformBitmap bitmap) {
+                  if (bitmap != null) {
+                    BitmapDescriptor descriptor = Convert.toBitmapDescriptor(
+                            bitmap,
+                            context.getAssets(),
+                            context.getResources().getDisplayMetrics().density
+                    );
+                    callback.onIconLoaded(descriptor);
+                  } else {
+                    callback.onIconLoaded(null);
+                  }
+                }
+
+                @Override
+                public void error(Throwable throwable) {
+                  callback.onIconLoaded(null);
+                }
+              }
+      );
+    }
+  }
 }
+
+
+

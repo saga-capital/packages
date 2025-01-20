@@ -726,6 +726,9 @@ abstract class MapsCallbackApi {
   /// Called when a polyline is tapped.
   void onPolylineTap(String polylineId);
 
+  @async
+  PlatformBitmap? getBitmapForCluster(String clusterId, int count);
+
   /// Called to get data for a map tile.
   @async
   PlatformTile getTileOverlayTile(

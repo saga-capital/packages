@@ -79,7 +79,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
   }
 
   @override
-  Future<void> init(int mapId) {
+  Future<void> init(int mapId, {MapObjects? initMapObject}) {
     final MethodChannel channel = ensureChannelInitialized(mapId);
     return channel.invokeMethod<void>('map#waitForMap');
   }

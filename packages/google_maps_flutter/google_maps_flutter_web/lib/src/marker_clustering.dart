@@ -42,11 +42,12 @@ class ClusterManagersController extends GeometryController {
 
   void _addClusterManager(ClusterManager clusterManager) {
     final MarkerClusterer markerClusterer = createMarkerClusterer(
-        googleMap,
-        (gmaps.MapMouseEvent event, MarkerClustererCluster cluster,
-                gmaps.Map map) =>
-            _clusterClicked(
-                clusterManager.clusterManagerId, event, cluster, map));
+      googleMap,
+      (gmaps.MapMouseEvent event, MarkerClustererCluster cluster,
+              gmaps.Map map) =>
+          _clusterClicked(clusterManager.clusterManagerId, event, cluster, map),
+      iconRenderer: clusterManager.iconRenderer,
+    );
 
     _clusterManagerIdToMarkerClusterer[clusterManager.clusterManagerId] =
         markerClusterer;

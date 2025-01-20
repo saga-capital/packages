@@ -370,8 +370,13 @@ void _cleanUpBitmapConversionCaches() {
 }
 
 // Converts a [BitmapDescriptor] into a [gmaps.Icon] that can be used in Markers.
-Future<gmaps.Icon?> _gmIconFromBitmapDescriptor(
-    BitmapDescriptor bitmapDescriptor) async {
+Future<gmaps.Icon?> gmIconFromBitmapDescriptor(
+  BitmapDescriptor? bitmapDescriptor,
+) async {
+  if (bitmapDescriptor == null) {
+    return null;
+  }
+
   gmaps.Icon? icon;
 
   if (bitmapDescriptor is MapBitmap) {
@@ -460,7 +465,7 @@ Future<gmaps.MarkerOptions> _markerOptionsFromMarker(
     ..visible = marker.visible
     ..opacity = marker.alpha
     ..draggable = marker.draggable
-    ..icon = await _gmIconFromBitmapDescriptor(marker.icon);
+    ..icon = await gmIconFromBitmapDescriptor(marker.icon);
   // TODO(ditman): Compute anchor properly, otherwise infowindows attach to the wrong spot.
   // Flat and Rotation are not supported directly on the web.
 }
