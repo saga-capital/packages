@@ -40,6 +40,12 @@ class PolygonsController extends GeometryController {
       onTap: () {
         _onPolygonTap(polygon.polygonId);
       },
+      onEnter: () {
+        _onPolygonEnter(polygon.polygonId);
+      },
+      onExit: () {
+        _onPolygonExit(polygon.polygonId);
+      },
     );
     _polygonIdToController[polygon.polygonId] = controller;
   }
@@ -74,5 +80,13 @@ class PolygonsController extends GeometryController {
     // Comment here: https://github.com/flutter/flutter/issues/64084
     _streamController.add(PolygonTapEvent(mapId, polygonId));
     return _polygonIdToController[polygonId]?.consumeTapEvents ?? false;
+  }
+
+  void _onPolygonEnter(PolygonId polygonId) {
+    _streamController.add(PolygonEnterEvent(mapId, polygonId));
+  }
+
+  void _onPolygonExit(PolygonId polygonId) {
+    _streamController.add(PolygonExitEvent(mapId, polygonId));
   }
 }

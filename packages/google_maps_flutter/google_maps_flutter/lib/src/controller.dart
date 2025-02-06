@@ -93,6 +93,18 @@ class GoogleMapController {
           ),
     );
     _streamSubscriptions.add(
+        GoogleMapsFlutterPlatform.instance
+            .onMarkerEnter(mapId: mapId)
+            .listen((MarkerEnterEvent e) => _googleMapState.onMarkerEnter(e.value))
+    );
+
+    _streamSubscriptions.add(
+        GoogleMapsFlutterPlatform.instance
+            .onMarkerExit(mapId: mapId)
+            .listen((MarkerExitEvent e) => _googleMapState.onMarkerExit(e.value))
+    );
+
+    _streamSubscriptions.add(
       GoogleMapsFlutterPlatform.instance
           .onInfoWindowTap(mapId: mapId)
           .listen(
@@ -111,6 +123,16 @@ class GoogleMapController {
           .onPolygonTap(mapId: mapId)
           .listen((PolygonTapEvent e) => _googleMapState.onPolygonTap(e.value)),
     );
+
+    _streamSubscriptions.add(GoogleMapsFlutterPlatform.instance.onPolygonEnter(mapId: mapId).listen(
+    (PolygonEnterEvent e) => _googleMapState
+        .onPolygonEnter(e.value))
+        .listen((PolygonEnterEvent e) => _googleMapState.onPolygonEnter(e.value))
+    );
+    _streamSubscriptions.add( GoogleMapsFlutterPlatform.instance
+        .onPolygonExit(mapId: mapId)
+        .listen((PolygonExitEvent e) => _googleMapState.onPolygonExit(e.value)));
+
     _streamSubscriptions.add(
       GoogleMapsFlutterPlatform.instance
           .onCircleTap(mapId: mapId)

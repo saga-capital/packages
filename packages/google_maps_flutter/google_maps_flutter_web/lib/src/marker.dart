@@ -25,6 +25,8 @@ abstract class MarkerController<T, O> {
     LatLngCallback? onDragEnd,
     VoidCallback? onTap,
     ClusterManagerId? clusterManagerId,
+    VoidCallback? onEnter,
+    VoidCallback? onExit,
   }) : _marker = marker,
        _infoWindow = infoWindow,
        _consumeTapEvents = consumeTapEvents,
@@ -35,6 +37,8 @@ abstract class MarkerController<T, O> {
       onDrag: onDrag,
       onDragEnd: onDragEnd,
       onTap: onTap,
+      onEnter: onEnter,
+      onExit: onExit,
     );
   }
 
@@ -76,6 +80,8 @@ abstract class MarkerController<T, O> {
     required LatLngCallback? onDrag,
     required LatLngCallback? onDragEnd,
     required VoidCallback? onTap,
+    VoidCallback? onEnter,
+    VoidCallback? onExit,
   });
 
   /// Disposes of the currently wrapped marker object.
@@ -117,6 +123,8 @@ class LegacyMarkerController
     super.onDragEnd,
     super.onTap,
     super.clusterManagerId,
+    super.onEnter,
+    super.onExit,
   });
 
   /// List of active stream subscriptions for marker events.
@@ -134,6 +142,8 @@ class LegacyMarkerController
     required LatLngCallback? onDrag,
     required LatLngCallback? onDragEnd,
     required VoidCallback? onTap,
+    VoidCallback? onEnter,
+    VoidCallback? onExit,
   }) {
     if (onTap != null) {
       _subscriptions.add(
@@ -163,6 +173,20 @@ class LegacyMarkerController
         marker.onDragend.listen((gmaps.MapMouseEvent event) {
           marker.position = event.latLng;
           onDragEnd.call(event.latLng ?? _nullGmapsLatLng);
+        }),
+      );
+    }
+    if (onEnter != null) {
+      _subscriptions.add(
+        marker.onMouseover.listen((gmaps.MapMouseEvent event) {
+          onEnter.call();
+        }),
+      );
+    }
+    if (onExit != null) {
+      _subscriptions.add(
+        marker.onMouseout.listen((gmaps.MapMouseEvent event) {
+          onExit.call();
         }),
       );
     }
@@ -232,6 +256,8 @@ class AdvancedMarkerController
     super.onDragEnd,
     super.onTap,
     super.clusterManagerId,
+    super.onEnter,
+    super.onExit,
   });
 
   /// List of active stream subscriptions for marker events.
@@ -249,6 +275,8 @@ class AdvancedMarkerController
     required LatLngCallback? onDrag,
     required LatLngCallback? onDragEnd,
     required VoidCallback? onTap,
+    VoidCallback? onEnter,
+    VoidCallback? onExit,
   }) {
     if (onTap != null) {
       _subscriptions.add(
