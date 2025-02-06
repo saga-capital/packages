@@ -128,6 +128,16 @@ class MarkerDragEndEvent extends _PositionedMapEvent<MarkerId> {
   MarkerDragEndEvent(super.mapId, super.position, super.markerId);
 }
 
+class MarkerEnterEvent extends MapEvent<MarkerId> {
+
+  MarkerEnterEvent(super.mapId, super.markerId);
+}
+
+class MarkerExitEvent extends MapEvent<MarkerId> {
+
+  MarkerExitEvent(super.mapId, super.markerId);
+}
+
 /// An event fired when a [Polyline] is tapped.
 class PolylineTapEvent extends MapEvent<PolylineId> {
   /// Build an PolylineTap Event triggered from the map represented by `mapId`.
@@ -142,6 +152,13 @@ class PolygonTapEvent extends MapEvent<PolygonId> {
   ///
   /// The `value` of this event is a [PolygonId] object that represents the tapped Polygon.
   PolygonTapEvent(super.mapId, super.polygonId);
+}
+
+class PolygonEnterEvent extends MapEvent<PolygonId> {
+  PolygonEnterEvent(super.mapId, super.polygonId);
+}
+class PolygonExitEvent extends MapEvent<PolygonId> {
+  PolygonExitEvent(super.mapId, super.polygonId);
 }
 
 /// An event fired when a [Circle] is tapped.

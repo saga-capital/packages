@@ -89,6 +89,12 @@ class MarkersController extends GeometryController {
       onDragEnd: (gmaps.LatLng latLng) {
         _onMarkerDragEnd(marker.markerId, latLng);
       },
+      onEnter: () {
+        _onMarkerEnter(marker.markerId);
+      },
+      onExit: () {
+        _onMarkerExit(marker.markerId);
+      },
     );
     _markerIdToController[marker.markerId] = controller;
   }
@@ -196,6 +202,14 @@ class MarkersController extends GeometryController {
     _streamController.add(
       MarkerDragEndEvent(mapId, gmLatLngToLatLng(latLng), markerId),
     );
+  }
+
+  void _onMarkerEnter(MarkerId markerId) {
+    _streamController.add(MarkerEnterEvent(mapId, markerId));
+  }
+
+  void _onMarkerExit(MarkerId markerId) {
+    _streamController.add(MarkerExitEvent(mapId, markerId));
   }
 
   void _hideAllMarkerInfoWindow() {
