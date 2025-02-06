@@ -11,11 +11,23 @@ class PolygonController {
     required gmaps.Polygon polygon,
     bool consumeTapEvents = false,
     VoidCallback? onTap,
+    VoidCallback? onEnter,
+    VoidCallback? onExit,
   })  : _polygon = polygon,
         _consumeTapEvents = consumeTapEvents {
     if (onTap != null) {
       polygon.onClick.listen((gmaps.PolyMouseEvent event) {
         onTap.call();
+      });
+    }
+    if (onEnter != null){
+      polygon.onMouseover.listen((gmaps.PolyMouseEvent event){
+        onEnter.call();
+      });
+    }
+    if (onExit != null){
+      polygon.onMouseout.listen((gmaps.PolyMouseEvent event){
+        onExit.call();
       });
     }
   }
