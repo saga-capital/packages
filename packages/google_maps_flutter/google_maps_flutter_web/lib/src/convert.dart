@@ -318,6 +318,20 @@ gmaps.InfoWindowOptions? _infoWindowOptionsFromMarker(Marker marker) {
   // and the marker.infoWindow.anchor property.
 }
 
+gmaps.MarkerLabel? _markerLabelFromMarker(Marker marker) {
+  if (marker.markerLabel.text.isEmpty) {
+    return null;
+  }
+
+  return gmaps.MarkerLabel()
+    ..text = sanitizeHtml(marker.markerLabel.text)
+    ..color = marker.markerLabel.color
+    ..fontFamily = marker.markerLabel.fontFamily
+    ..fontSize = marker.markerLabel.fontSize
+    ..fontWeight = marker.markerLabel.fontWeight
+    ..className = marker.markerLabel.className;
+}
+
 // Attempts to extract a [gmaps.Size] from `iconConfig[sizeIndex]`.
 gmaps.Size? _gmSizeFromIconConfig(List<Object?> iconConfig, int sizeIndex) {
   gmaps.Size? size;
@@ -499,12 +513,21 @@ Future<gmaps.MarkerOptions> _markerOptionsFromMarker(
   Marker marker,
   gmaps.Marker? currentMarker,
 ) async {
+  //todo check if can be removed
+  // final Offset anchor = marker.anchor;
+  // final gmaps.Point? anchorPoint = anchor == Offset.zero
+  //     ? null
+  //     : gmaps.Point(anchor.dx.toInt(), anchor.dy.toInt());
+  //
+  // final gmaps.Icon? icon = await gmIconFromBitmapDescriptor(marker.icon);
+  //
   return gmaps.MarkerOptions()
     ..position = gmaps.LatLng(
       marker.position.latitude,
       marker.position.longitude,
     )
     ..title = sanitizeHtml(marker.infoWindow.title ?? '')
+    ..label = _markerLabelFromMarker(marker)
     // The deprecated parameter is used here to avoid losing precision.
     // ignore: deprecated_member_use
     ..zIndex = marker.zIndex
