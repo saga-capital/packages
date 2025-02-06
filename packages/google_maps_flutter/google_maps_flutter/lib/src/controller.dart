@@ -73,6 +73,14 @@ class GoogleMapController {
     GoogleMapsFlutterPlatform.instance.onMarkerDragEnd(mapId: mapId).listen(
         (MarkerDragEndEvent e) =>
             _googleMapState.onMarkerDragEnd(e.value, e.position));
+
+    GoogleMapsFlutterPlatform.instance
+        .onMarkerEnter(mapId: mapId)
+        .listen((MarkerEnterEvent e) => _googleMapState.onMarkerEnter(e.value));
+    GoogleMapsFlutterPlatform.instance
+        .onMarkerExit(mapId: mapId)
+        .listen((MarkerExitEvent e) => _googleMapState.onMarkerExit(e.value));
+
     GoogleMapsFlutterPlatform.instance.onInfoWindowTap(mapId: mapId).listen(
         (InfoWindowTapEvent e) => _googleMapState.onInfoWindowTap(e.value));
     GoogleMapsFlutterPlatform.instance
@@ -81,6 +89,13 @@ class GoogleMapController {
     GoogleMapsFlutterPlatform.instance
         .onPolygonTap(mapId: mapId)
         .listen((PolygonTapEvent e) => _googleMapState.onPolygonTap(e.value));
+
+    GoogleMapsFlutterPlatform.instance.onPolygonEnter(mapId: mapId).listen(
+        (PolygonEnterEvent e) => _googleMapState.onPolygonEnter(e.value));
+    GoogleMapsFlutterPlatform.instance
+        .onPolygonExit(mapId: mapId)
+        .listen((PolygonExitEvent e) => _googleMapState.onPolygonExit(e.value));
+
     GoogleMapsFlutterPlatform.instance
         .onCircleTap(mapId: mapId)
         .listen((CircleTapEvent e) => _googleMapState.onCircleTap(e.value));

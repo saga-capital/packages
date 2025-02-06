@@ -34,6 +34,8 @@ class Polygon implements MapsObject<Polygon> {
     this.visible = true,
     this.zIndex = 0,
     this.onTap,
+    this.onEnter,
+    this.onExit,
   });
 
   /// Uniquely identifies a [Polygon].
@@ -93,6 +95,11 @@ class Polygon implements MapsObject<Polygon> {
   /// Callbacks to receive tap events for polygon placed on this map.
   final VoidCallback? onTap;
 
+  final VoidCallback? onEnter;
+
+  final VoidCallback? onExit;
+
+
   /// Creates a new [Polygon] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
   Polygon copyWith({
@@ -106,6 +113,8 @@ class Polygon implements MapsObject<Polygon> {
     bool? visibleParam,
     int? zIndexParam,
     VoidCallback? onTapParam,
+    VoidCallback? onEnterParam,
+    VoidCallback? onExitParam,
   }) {
     return Polygon(
       polygonId: polygonId,
@@ -118,6 +127,8 @@ class Polygon implements MapsObject<Polygon> {
       strokeWidth: strokeWidthParam ?? strokeWidth,
       visible: visibleParam ?? visible,
       onTap: onTapParam ?? onTap,
+      onEnter: onEnterParam ?? onEnter,
+      onExit: onExitParam ?? onExit,
       zIndex: zIndexParam ?? zIndex,
     );
   }

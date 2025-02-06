@@ -566,6 +566,28 @@ class _GoogleMapState extends State<GoogleMap> {
     }
   }
 
+  void onMarkerEnter(MarkerId markerId){
+    final Marker? marker = _markers[markerId];
+    if (marker == null) {
+      throw UnknownMapObjectIdError('marker', markerId, 'onEnter');
+    }
+    final VoidCallback? onEnter = marker.onEnter;
+    if (onEnter != null) {
+      onEnter();
+    }
+  }
+
+  void onMarkerExit(MarkerId markerId){
+    final Marker? marker = _markers[markerId];
+    if (marker == null) {
+      throw UnknownMapObjectIdError('marker', markerId, 'onExit');
+    }
+    final VoidCallback? onExit = marker.onExit;
+    if (onExit != null) {
+      onExit();
+    }
+  }
+
   void onPolygonTap(PolygonId polygonId) {
     final Polygon? polygon = _polygons[polygonId];
     if (polygon == null) {
@@ -574,6 +596,28 @@ class _GoogleMapState extends State<GoogleMap> {
     final VoidCallback? onTap = polygon.onTap;
     if (onTap != null) {
       onTap();
+    }
+  }
+
+  void onPolygonEnter(PolygonId polygonId) {
+    final Polygon? polygon = _polygons[polygonId];
+    if (polygon == null) {
+      throw UnknownMapObjectIdError('polygon', polygonId, 'onTap');
+    }
+    final VoidCallback? onEnter = polygon.onEnter;
+    if (onEnter != null) {
+      onEnter();
+    }
+  }
+
+  void onPolygonExit(PolygonId polygonId) {
+    final Polygon? polygon = _polygons[polygonId];
+    if (polygon == null) {
+      throw UnknownMapObjectIdError('polygon', polygonId, 'onTap');
+    }
+    final VoidCallback? onExit = polygon.onExit;
+    if (onExit != null) {
+      onExit();
     }
   }
 

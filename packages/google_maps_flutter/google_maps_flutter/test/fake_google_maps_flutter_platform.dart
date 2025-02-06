@@ -38,7 +38,7 @@ class FakeGoogleMapsFlutterPlatform extends GoogleMapsFlutterPlatform {
       StreamController<MapEvent<dynamic>>.broadcast();
 
   @override
-  Future<void> init(int mapId) async {}
+  Future<void> init(int mapId, {MapObjects? initMapObject}) async {}
 
   @override
   Future<void> updateMapConfiguration(

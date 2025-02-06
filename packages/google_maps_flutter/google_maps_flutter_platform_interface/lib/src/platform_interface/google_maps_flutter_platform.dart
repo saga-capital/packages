@@ -386,6 +386,16 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('onMarkerDragEnd() has not been implemented.');
   }
 
+  /// A [Marker] has been entered by mouse.
+  Stream<MarkerEnterEvent> onMarkerEnter({required int mapId}){
+    throw UnimplementedError('onMarkerEnter() has not been implemented.');
+  }
+
+  /// A [Marker] has been exited by mouse.
+  Stream<MarkerExitEvent> onMarkerExit({required int mapId}){
+    throw UnimplementedError('onMarkerExit() has not been implemented.');
+  }
+
   /// A [Polyline] has been tapped.
   Stream<PolylineTapEvent> onPolylineTap({required int mapId}) {
     throw UnimplementedError('onPolylineTap() has not been implemented.');
@@ -394,6 +404,16 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
   /// A [Polygon] has been tapped.
   Stream<PolygonTapEvent> onPolygonTap({required int mapId}) {
     throw UnimplementedError('onPolygonTap() has not been implemented.');
+  }
+
+  /// A [Polygon] has been entered by mouse.
+  Stream<PolygonEnterEvent> onPolygonEnter({required int mapId}){
+    throw UnimplementedError('onPolygonEnter()has not been implemented.');
+  }
+
+  /// A [Polygon] has been exited by mouse.
+  Stream<PolygonExitEvent> onPolygonExit({required int mapId}){
+    throw UnimplementedError('onPolygonExit()has not been implemented.');
   }
 
   /// A [Circle] has been tapped.
