@@ -48,6 +48,8 @@ export 'package:google_maps_flutter_platform_interface/google_maps_flutter_platf
         MarkerId,
         MinMaxZoomPreference,
         PatternItem,
+        WebPatternItem,
+        PatternRepeatMode,
         Polygon,
         PolygonId,
         Polyline,

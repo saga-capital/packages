@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/foundation.dart' show immutable;
+import 'package:flutter/material.dart' show Colors, Color;
 
 /// Enumeration of types of pattern items.
 enum PatternItemType {
@@ -16,7 +17,8 @@ enum PatternItemType {
   gap,
 }
 
-String _patternItemTypeToJson(PatternItemType itemType) => switch (itemType) {
+String _patternItemTypeToJson(PatternItemType itemType) =>
+    switch (itemType) {
       PatternItemType.dot => 'dot',
       PatternItemType.dash => 'dash',
       PatternItemType.gap => 'gap',
@@ -52,7 +54,8 @@ class PatternItem {
   final PatternItemType type;
 
   /// Converts this object to something serializable in JSON.
-  Object toJson() => <Object>[
+  Object toJson() =>
+      <Object>[
         _patternItemTypeToJson(type),
       ];
 }
@@ -69,8 +72,77 @@ class VariableLengthPatternItem extends PatternItem {
 
   /// Converts this object to something serializable in JSON.
   @override
-  Object toJson() => <Object>[
+  Object toJson() =>
+      <Object>[
         _patternItemTypeToJson(type),
         length,
       ];
+}
+
+
+@immutable
+class WebPatternItem implements PatternItem {
+
+  static const String linePath = 'M 0,-1 0,1';
+
+  //todo change dot to symbol usage
+  static const String dotPath = 'M -1,-1 -1,1 1,1 1,-1z';
+
+  const WebPatternItem({
+    this.path = linePath,
+    this.offset = 0,
+    this.repeat = 20,
+    this.repeatMode = PatternRepeatMode.pixels,
+    this.strokeColor = Colors.black,
+    this.strokeWeight,
+    this.fillColor,
+    this.opacity = 1,
+    this.scale = 1,
+    this.rotation,
+  });
+
+  final String path;
+  final num offset;
+  final num repeat;
+  final PatternRepeatMode repeatMode;
+  final Color strokeColor;
+  final int? strokeWeight;
+  final Color? fillColor;
+  final num scale;
+  final num opacity;
+  final num? rotation;
+
+  @override
+  Object toJson() {
+    return <Object?>[
+      path,
+      offset,
+      repeat,
+      repeatMode.name,
+      strokeWeight,
+      strokeColor.value.toRadixString(16),
+      fillColor?.value.toRadixString(16) ?? '',
+      opacity,
+      scale,
+      rotation,
+    ];
+  }
+
+  @override
+  PatternItemType get type => PatternItemType.gap;
+}
+
+enum PatternRepeatMode {
+  pixels,
+  percentage,
+  ;
+
+  String get asString {
+    switch (this) {
+      case PatternRepeatMode.pixels:
+        return 'px';
+      case PatternRepeatMode.percentage:
+        return '%';
+    }
+  }
 }
