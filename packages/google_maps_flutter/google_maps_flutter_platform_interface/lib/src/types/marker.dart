@@ -6,6 +6,7 @@ import 'dart:ui' show Offset;
 
 import 'package:flutter/foundation.dart'
     show ValueChanged, VoidCallback, immutable;
+import 'package:flutter/material.dart' show Color;
 
 import 'types.dart';
 
@@ -127,7 +128,7 @@ class MarkerLabel {
   static const MarkerLabel noLabel = MarkerLabel(text: '');
 
   final String text;
-  final String? color;
+  final Color? color;
   final String? fontSize;
   final String? fontFamily;
   final String? fontWeight;
@@ -135,7 +136,7 @@ class MarkerLabel {
 
   MarkerLabel copyWith({
     String? textParam,
-    String? colorParam,
+    Color? colorParam,
     String? fontSizeParam,
     String? fontFamilyParam,
     String? fontWeightParam,
@@ -151,7 +152,7 @@ class MarkerLabel {
     );
   }
 
-  Object _toJson() {
+  Object toJson() {
     final Map<String, Object> json = <String, Object>{};
 
     void addIfPresent(String fieldName, Object? value) {
@@ -161,7 +162,7 @@ class MarkerLabel {
     }
 
     addIfPresent('text', text);
-    addIfPresent('color', color);
+    addIfPresent('color', color?.value);
     addIfPresent('fontSize', fontSize);
     addIfPresent('fontFamily', fontFamily);
     addIfPresent('fontWeight', fontWeight);
@@ -250,6 +251,7 @@ class Marker implements MapsObject<Marker> {
     this.onDragEnd,
     this.onEnter,
     this.onExit,
+    this.animate = false,
   }) : assert(0.0 <= alpha && alpha <= 1.0),
        assert(
          zIndex == 0.0 || zIndexInt == 0,
@@ -354,6 +356,8 @@ class Marker implements MapsObject<Marker> {
   /// Callbacks to receive exit events for markers placed on this map.
   final VoidCallback? onExit;
 
+  final bool animate;
+
   /// Creates a new [Marker] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
   Marker copyWith({
@@ -380,6 +384,7 @@ class Marker implements MapsObject<Marker> {
     ValueChanged<LatLng>? onDragEndParam,
     VoidCallback? onEnterParam,
     VoidCallback? onExitParam,
+    bool? animate,
     ClusterManagerId? clusterManagerIdParam,
   }) {
     assert(
@@ -406,6 +411,7 @@ class Marker implements MapsObject<Marker> {
       onDragEnd: onDragEndParam ?? onDragEnd,
       onEnter: onEnterParam ?? onEnter,
       onExit: onExitParam ?? onExit,
+      animate: animate ?? this.animate,
       clusterManagerId: clusterManagerIdParam ?? clusterManagerId,
     );
   }
@@ -438,6 +444,7 @@ class Marker implements MapsObject<Marker> {
     addIfPresent('visible', visible);
     addIfPresent('zIndex', zIndex);
     addIfPresent('zIndexInt', zIndexInt);
+    addIfPresent('animate', animate);
     addIfPresent('clusterManagerId', clusterManagerId?.value);
     return json;
   }
@@ -464,6 +471,7 @@ class Marker implements MapsObject<Marker> {
         visible == other.visible &&
         zIndex == other.zIndex &&
         zIndexInt == other.zIndexInt &&
+        animate == other.animate &&
         clusterManagerId == other.clusterManagerId;
   }
 
@@ -476,6 +484,7 @@ class Marker implements MapsObject<Marker> {
         'consumeTapEvents: $consumeTapEvents, draggable: $draggable, flat: $flat, '
         'icon: $icon, infoWindow: $infoWindow, position: $position, rotation: $rotation, '
         'visible: $visible, zIndex: $zIndex, onTap: $onTap, onDragStart: $onDragStart, '
-        'onDrag: $onDrag, onDragEnd: $onDragEnd, clusterManagerId: $clusterManagerId}';
+        'onDrag: $onDrag, onDragEnd: $onDragEnd, clusterManagerId: $clusterManagerId, '
+        'animate: $animate}';
   }
 }

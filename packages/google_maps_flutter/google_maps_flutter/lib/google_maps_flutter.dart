@@ -54,6 +54,7 @@ export 'package:google_maps_flutter_platform_interface/google_maps_flutter_platf
         MarkerLabel,
         MinMaxZoomPreference,
         PatternItem,
+        PatternRepeatMode,
         PinConfig,
         Polygon,
         PolygonId,
@@ -67,6 +68,7 @@ export 'package:google_maps_flutter_platform_interface/google_maps_flutter_platf
         TileProvider,
         WebCameraControlPosition,
         WebGestureHandling,
+        WebPatternItem,
         WeightedLatLng;
 
 part 'src/controller.dart';

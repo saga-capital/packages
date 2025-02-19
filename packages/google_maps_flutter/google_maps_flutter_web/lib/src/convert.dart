@@ -356,7 +356,9 @@ gmaps.MarkerLabel? _markerLabelFromMarker(Marker marker) {
 
   return gmaps.MarkerLabel()
     ..text = sanitizeHtml(marker.markerLabel.text)
-    ..color = marker.markerLabel.color
+    ..color = marker.markerLabel.color != null
+        ? _getCssColor(marker.markerLabel.color!)
+        : null
     ..fontFamily = marker.markerLabel.fontFamily
     ..fontSize = marker.markerLabel.fontSize
     ..fontWeight = marker.markerLabel.fontWeight
@@ -788,6 +790,7 @@ Future<O> _markerOptionsFromMarker<T, O>(
       ..icon = await _gmIconFromBitmapDescriptor(marker.icon, marker.anchor)
       ..title = sanitizeHtml(marker.infoWindow.title ?? '')
       ..label = _markerLabelFromMarker(marker)
+      ..animation = marker.animate ? gmaps.Animation.BOUNCE : null
       ..zIndex = marker.zIndex
       ..visible = marker.visible
       ..opacity = marker.alpha
@@ -948,6 +951,7 @@ gmaps.PolylineOptions _polylineOptionsFromPolyline(
       .map(_latLngToGmLatLng)
       .toList();
 
+  final List<gmaps.IconSequence>? icons = _getIconSequences(polyline);
   return gmaps.PolylineOptions()
     ..path = paths.toJS
     ..strokeWeight = polyline.width
@@ -955,6 +959,7 @@ gmaps.PolylineOptions _polylineOptionsFromPolyline(
     ..strokeOpacity = _getCssOpacity(polyline.color)
     ..visible = polyline.visible
     ..zIndex = polyline.zIndex
+    ..icons = icons
     ..geodesic = polyline.geodesic
     ..clickable = polyline.consumeTapEvents;
   //  this.endCap = Cap.buttCap,
@@ -962,6 +967,37 @@ gmaps.PolylineOptions _polylineOptionsFromPolyline(
   //  this.patterns = const <PatternItem>[],
   //  this.startCap = Cap.buttCap,
   //  this.width = 10,
+}
+
+List<gmaps.IconSequence>? _getIconSequences(Polyline polyline) {
+  if (!polyline.patterns.every(
+    (PatternItem element) => element is WebPatternItem,
+  )) {
+    return null;
+  }
+  final List<gmaps.IconSequence> icons = <gmaps.IconSequence>[];
+  for (final PatternItem item in polyline.patterns) {
+    final WebPatternItem webItem = item as WebPatternItem;
+    icons.add(gmaps.IconSequence(
+      offset: webItem.offset.toString(),
+      repeat: '${webItem.repeat}${webItem.repeatMode.asString}',
+      icon: gmaps.Symbol()
+        ..strokeOpacity = _getCssOpacity(webItem.strokeColor)
+        ..strokeColor = _getCssColor(webItem.strokeColor)
+        ..strokeWeight = webItem.strokeWeight
+        ..fillColor =
+            webItem.fillColor != null ? _getCssColor(webItem.fillColor!) : null
+        ..fillOpacity = webItem.fillColor != null
+            ? _getCssOpacity(webItem.fillColor!)
+            : null
+        ..path = webItem.path == WebPatternItem.dotPath
+            ? gmaps.SymbolPath.CIRCLE
+            : (webItem.path.toJS)
+        ..rotation = webItem.rotation
+        ..scale = webItem.scale,
+    ));
+  }
+  return icons;
 }
 
 // Translates a [CameraUpdate] into operations on a [gmaps.Map].
