@@ -174,6 +174,16 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
   }
 
   @override
+  Stream<MarkerEnterEvent> onMarkerEnter({required int mapId}) {
+    return _events(mapId).whereType<MarkerEnterEvent>();
+  }
+
+  @override
+  Stream<MarkerExitEvent> onMarkerExit({required int mapId}) {
+    return _events(mapId).whereType<MarkerExitEvent>();
+  }
+
+  @override
   Stream<InfoWindowTapEvent> onInfoWindowTap({required int mapId}) {
     return _events(mapId).whereType<InfoWindowTapEvent>();
   }
@@ -201,6 +211,16 @@ class GoogleMapsFlutterAndroid extends GoogleMapsFlutterPlatform {
   @override
   Stream<PolygonTapEvent> onPolygonTap({required int mapId}) {
     return _events(mapId).whereType<PolygonTapEvent>();
+  }
+
+  @override
+  Stream<PolygonEnterEvent> onPolygonEnter({required int mapId}) {
+    return _events(mapId).whereType<PolygonEnterEvent>();
+  }
+
+  @override
+  Stream<PolygonExitEvent> onPolygonExit({required int mapId}) {
+    return _events(mapId).whereType<PolygonExitEvent>();
   }
 
   @override
