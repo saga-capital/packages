@@ -47,12 +47,12 @@ class MarkerController {
     }
     if (onEnter != null) {
       marker.onMouseover.listen((gmaps.MapMouseEvent event) {
-        onEnter.call();
+        onEnter?.call();
       });
     }
     if (onExit != null) {
       marker.onMouseout.listen((gmaps.MapMouseEvent event) {
-        onExit.call();
+        onExit?.call();
       });
     }
   }
@@ -100,6 +100,7 @@ class MarkerController {
   /// Disposes of the currently wrapped [gmaps.Marker].
   void remove() {
     if (_marker != null) {
+      //todo remove stream subscriptions
       _infoWindowShown = false;
       _marker!.visible = false;
       _marker!.map = null;
