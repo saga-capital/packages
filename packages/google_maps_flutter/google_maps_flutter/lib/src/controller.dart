@@ -60,8 +60,7 @@ class GoogleMapController {
       _streamSubscriptions.add(
         GoogleMapsFlutterPlatform.instance
             .onCameraIdle(mapId: mapId)
-            .listen((_) => _googleMapState.widget.onCameraIdle!()),
-      );
+            .listen((_) => _googleMapState.widget.onCameraIdle!()),);
     }
     _streamSubscriptions.add(
       GoogleMapsFlutterPlatform.instance
