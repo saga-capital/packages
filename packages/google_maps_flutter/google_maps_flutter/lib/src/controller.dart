@@ -71,7 +71,7 @@ class GoogleMapController {
     _streamSubscriptionList.add(GoogleMapsFlutterPlatform.instance
         .onMarkerTap(mapId: mapId)
         .listen((MarkerTapEvent e) => _googleMapState.onMarkerTap(e.value)));
-    _streamSubscriptionList.add( GoogleMapsFlutterPlatform.instance.onMarkerDragStart(mapId: mapId).listen(
+    _streamSubscriptionList.add(GoogleMapsFlutterPlatform.instance.onMarkerDragStart(mapId: mapId).listen(
         (MarkerDragStartEvent e) =>
             _googleMapState.onMarkerDragStart(e.value, e.position)));
     _streamSubscriptionList.add(GoogleMapsFlutterPlatform.instance.onMarkerDrag(mapId: mapId).listen(
@@ -105,8 +105,8 @@ class GoogleMapController {
 
     _streamSubscriptionList.add(GoogleMapsFlutterPlatform.instance
         .onCircleTap(mapId: mapId)
-        .listen((CircleTapEvent e) => _googleMapState.onCircleTap(e.value));
-        _streamSubscriptionList.add(GoogleMapsFlutterPlatform.instance.onGroundOverlayTap(mapId: mapId).listen(
+        .listen((CircleTapEvent e) => _googleMapState.onCircleTap(e.value)));
+    _streamSubscriptionList.add(GoogleMapsFlutterPlatform.instance.onGroundOverlayTap(mapId: mapId).listen(
         (GroundOverlayTapEvent e) =>
             _googleMapState.onGroundOverlayTap(e.value)));
     _streamSubscriptionList.add(GoogleMapsFlutterPlatform.instance

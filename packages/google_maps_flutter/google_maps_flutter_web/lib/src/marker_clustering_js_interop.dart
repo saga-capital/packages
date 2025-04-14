@@ -166,9 +166,10 @@ MarkerClusterer createMarkerClusterer(
   JSPromise<JSAny?> generator(JSNumber count) {
     final Completer<JSAny?> completer = Completer<JSAny?>();
 
-    iconRenderer?.call(count.toDartInt).then((BitmapDescriptor bitmap) {
-      completer.complete(gmIconFromBitmapDescriptor(bitmap));
-    });
+    //todo(orlik): I've broken this part by rebasing to latest main and now `gmIconFromBitmapDescriptor` is not available
+    // iconRenderer?.call(count.toDartInt).then((BitmapDescriptor bitmap) {
+    //   completer.complete(gmIconFromBitmapDescriptor(bitmap));
+    // });
 
     return completer.future.toJS;
   }
