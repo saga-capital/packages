@@ -439,6 +439,7 @@ class Marker implements MapsObject<Marker> {
     addIfPresent('flat', flat);
     addIfPresent('icon', icon.toJson());
     addIfPresent('infoWindow', infoWindow.toJson());
+    addIfPresent('markerLabel', markerLabel.toJson());
     addIfPresent('position', position.toJson());
     addIfPresent('rotation', rotation);
     addIfPresent('visible', visible);
@@ -466,6 +467,7 @@ class Marker implements MapsObject<Marker> {
         flat == other.flat &&
         icon == other.icon &&
         infoWindow == other.infoWindow &&
+        markerLabel == other.markerLabel &&
         position == other.position &&
         rotation == other.rotation &&
         visible == other.visible &&
@@ -482,9 +484,10 @@ class Marker implements MapsObject<Marker> {
   String toString() {
     return 'Marker{markerId: $markerId, alpha: $alpha, anchor: $anchor, '
         'consumeTapEvents: $consumeTapEvents, draggable: $draggable, flat: $flat, '
-        'icon: $icon, infoWindow: $infoWindow, position: $position, rotation: $rotation, '
-        'visible: $visible, zIndex: $zIndex, onTap: $onTap, onDragStart: $onDragStart, '
-        'onDrag: $onDrag, onDragEnd: $onDragEnd, clusterManagerId: $clusterManagerId, '
+        'icon: $icon, infoWindow: $infoWindow, markerLabel: $markerLabel, '
+        'position: $position, rotation: $rotation, visible: $visible, zIndex: $zIndex, '
+        'onTap: $onTap, onDragStart: $onDragStart, onDrag: $onDrag, '
+        'onDragEnd: $onDragEnd, clusterManagerId: $clusterManagerId, '
         'animate: $animate}';
   }
 }
