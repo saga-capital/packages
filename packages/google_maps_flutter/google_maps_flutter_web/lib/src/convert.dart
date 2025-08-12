@@ -566,6 +566,7 @@ gmaps.PolygonOptions _polygonOptionsFromPolygon(
     ..paths = paths.map((List<gmaps.LatLng> e) => e.toJS).toList().toJS
     ..strokeColor = _getCssColor(polygon.strokeColor)
     ..strokeOpacity = _getCssOpacity(polygon.strokeColor)
+    ..clickable = polygon.clickable
     ..strokeWeight = polygon.strokeWidth
     ..fillColor = _getCssColor(polygon.fillColor)
     ..fillOpacity = _getCssOpacity(polygon.fillColor)
