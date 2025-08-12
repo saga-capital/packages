@@ -25,6 +25,7 @@ class Polygon implements MapsObject<Polygon> {
   const Polygon({
     required this.polygonId,
     this.consumeTapEvents = false,
+    this.clickable = true,
     this.fillColor = Colors.black,
     this.geodesic = false,
     this.points = const <LatLng>[],
@@ -48,6 +49,9 @@ class Polygon implements MapsObject<Polygon> {
   ///
   /// If this is false, [onTap] callback will not be triggered.
   final bool consumeTapEvents;
+
+  /// Only works on WEB.
+  final bool clickable;
 
   /// Fill color in ARGB format, the same format used by Color. The default value is black (0xff000000).
   final Color fillColor;
@@ -115,6 +119,7 @@ class Polygon implements MapsObject<Polygon> {
     VoidCallback? onTapParam,
     VoidCallback? onEnterParam,
     VoidCallback? onExitParam,
+    bool? clickableParam,
   }) {
     return Polygon(
       polygonId: polygonId,
@@ -130,6 +135,7 @@ class Polygon implements MapsObject<Polygon> {
       onEnter: onEnterParam ?? onEnter,
       onExit: onExitParam ?? onExit,
       zIndex: zIndexParam ?? zIndex,
+      clickable: clickableParam ?? clickable,
     );
   }
 
