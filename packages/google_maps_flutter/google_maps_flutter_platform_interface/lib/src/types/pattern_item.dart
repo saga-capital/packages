@@ -81,25 +81,10 @@ class VariableLengthPatternItem extends PatternItem {
 
 
 @immutable
-class WebPatternItem implements PatternItem {
-
+class WebPatternItem extends VariableLengthPatternItem {
   static const String linePath = 'M 0,-1 0,1';
-
   //todo change dot to symbol usage
   static const String dotPath = 'M -1,-1 -1,1 1,1 1,-1z';
-
-  const WebPatternItem({
-    this.path = linePath,
-    this.offset = 0,
-    this.repeat = 20,
-    this.repeatMode = PatternRepeatMode.pixels,
-    this.strokeColor = Colors.black,
-    this.strokeWeight,
-    this.fillColor,
-    this.opacity = 1,
-    this.scale = 1,
-    this.rotation,
-  });
 
   final String path;
   final num offset;
@@ -112,9 +97,146 @@ class WebPatternItem implements PatternItem {
   final num opacity;
   final num? rotation;
 
+  /// Private constructor for all WebPatternItem variants.
+  const WebPatternItem._({
+    required PatternItemType patternItemType,
+    required double length,
+    required this.path,
+    required this.offset,
+    required this.repeat,
+    required this.repeatMode,
+    required this.strokeColor,
+    required this.strokeWeight,
+    required this.fillColor,
+    required this.opacity,
+    required this.scale,
+    required this.rotation,
+  }) : super._(patternItemType: patternItemType, length: length);
+
+  /// Dot pattern item (fixed, minimal params).
+  factory WebPatternItem.dot({
+    num offset = 0,
+    num repeat = 20,
+    PatternRepeatMode repeatMode = PatternRepeatMode.pixels,
+    Color strokeColor = Colors.black,
+    int? strokeWeight,
+    Color? fillColor,
+    num opacity = 1,
+    num scale = 1,
+    num? rotation,
+  }) {
+    return WebPatternItem._(
+      patternItemType: PatternItemType.dot,
+      length: 0,
+      path: dotPath,
+      offset: offset,
+      repeat: repeat,
+      repeatMode: repeatMode,
+      strokeColor: strokeColor,
+      strokeWeight: strokeWeight,
+      fillColor: fillColor,
+      opacity: opacity,
+      scale: scale,
+      rotation: rotation,
+    );
+  }
+
+  /// Dash pattern item (with length).
+  factory WebPatternItem.dash({
+    required double length,
+    String path = linePath,
+    num offset = 0,
+    num repeat = 20,
+    PatternRepeatMode repeatMode = PatternRepeatMode.pixels,
+    Color strokeColor = Colors.black,
+    int? strokeWeight,
+    Color? fillColor,
+    num opacity = 1,
+    num scale = 1,
+    num? rotation,
+  }) {
+    return WebPatternItem._(
+      patternItemType: PatternItemType.dash,
+      length: length,
+      path: path,
+      offset: offset,
+      repeat: repeat,
+      repeatMode: repeatMode,
+      strokeColor: strokeColor,
+      strokeWeight: strokeWeight,
+      fillColor: fillColor,
+      opacity: opacity,
+      scale: scale,
+      rotation: rotation,
+    );
+  }
+
+  /// Gap pattern item (with length).
+  factory WebPatternItem.gap({
+    required double length,
+    String path = linePath,
+    num offset = 0,
+    num repeat = 20,
+    PatternRepeatMode repeatMode = PatternRepeatMode.pixels,
+    Color strokeColor = Colors.black,
+    int? strokeWeight,
+    Color? fillColor,
+    num opacity = 1,
+    num scale = 1,
+    num? rotation,
+  }) {
+    return WebPatternItem._(
+      patternItemType: PatternItemType.gap,
+      length: length,
+      path: path,
+      offset: offset,
+      repeat: repeat,
+      repeatMode: repeatMode,
+      strokeColor: strokeColor,
+      strokeWeight: strokeWeight,
+      fillColor: fillColor,
+      opacity: opacity,
+      scale: scale,
+      rotation: rotation,
+    );
+  }
+
+  /// Custom pattern item (all params exposed).
+  factory WebPatternItem.custom({
+    /// SVG path string, e.g. 'M 0,-1 0,1' for a vertical line
+    required String path,
+    required double length,
+    num offset = 0,
+    num repeat = 20,
+    PatternRepeatMode repeatMode = PatternRepeatMode.pixels,
+    Color strokeColor = Colors.black,
+    int? strokeWeight,
+    Color? fillColor,
+    num opacity = 1,
+    num scale = 1,
+    num? rotation,
+  }) {
+    return WebPatternItem._(
+      patternItemType: PatternItemType.dash,
+      length: length,
+      path: path,
+      offset: offset,
+      repeat: repeat,
+      repeatMode: repeatMode,
+      strokeColor: strokeColor,
+      strokeWeight: strokeWeight,
+      fillColor: fillColor,
+      opacity: opacity,
+      scale: scale,
+      rotation: rotation,
+    );
+  }
+
   @override
   Object toJson() {
     return <Object?>[
+      _patternItemTypeToJson(type),
+      length,
       path,
       offset,
       repeat,
@@ -127,9 +249,6 @@ class WebPatternItem implements PatternItem {
       rotation,
     ];
   }
-
-  @override
-  PatternItemType get type => PatternItemType.gap;
 }
 
 enum PatternRepeatMode {
