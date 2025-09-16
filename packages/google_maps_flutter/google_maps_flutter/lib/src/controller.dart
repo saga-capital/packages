@@ -119,9 +119,8 @@ class GoogleMapController {
     );
 
     _streamSubscriptions.add(
-        GoogleMapsFlutterPlatform.instance.onPolygonEnter(mapId: mapId).listen(
-                (PolygonEnterEvent e) => _googleMapState
-        .onPolygonEnter(e.value))
+        GoogleMapsFlutterPlatform.instance
+        .onPolygonEnter(mapId: mapId)
         .listen((PolygonEnterEvent e) =>
                 _googleMapState.onPolygonEnter(e.value))
     );
@@ -132,7 +131,7 @@ class GoogleMapController {
     _streamSubscriptions.add(
       GoogleMapsFlutterPlatform.instance
           .onCircleTap(mapId: mapId)
-        .listen((CircleTapEvent e) => _googleMapState.onCircleTap(e.value));
+        .listen((CircleTapEvent e) => _googleMapState.onCircleTap(e.value)));
     _streamSubscriptions.add(
         GoogleMapsFlutterPlatform.instance
             .onGroundOverlayTap(mapId: mapId)
