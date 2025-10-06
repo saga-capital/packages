@@ -146,6 +146,14 @@ class PolylineTapEvent extends MapEvent<PolylineId> {
   PolylineTapEvent(super.mapId, super.polylineId);
 }
 
+class PolylineOverEvent extends _PositionedMapEvent<PolylineId> {
+  PolylineOverEvent(super.mapId, super.position, super.polylineId);
+}
+
+class PolylineOutEvent extends _PositionedMapEvent<PolylineId> {
+  PolylineOutEvent(super.mapId, super.position, super.polylineId);
+}
+
 /// An event fired when a [Polygon] is tapped.
 class PolygonTapEvent extends MapEvent<PolygonId> {
   /// Build an PolygonTap Event triggered from the map represented by `mapId`.
@@ -157,6 +165,7 @@ class PolygonTapEvent extends MapEvent<PolygonId> {
 class PolygonEnterEvent extends MapEvent<PolygonId> {
   PolygonEnterEvent(super.mapId, super.polygonId);
 }
+
 class PolygonExitEvent extends MapEvent<PolygonId> {
   PolygonExitEvent(super.mapId, super.polygonId);
 }

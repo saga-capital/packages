@@ -205,7 +205,7 @@ class WebPatternItem extends VariableLengthPatternItem {
   factory WebPatternItem.custom({
     /// SVG path string, e.g. 'M 0,-1 0,1' for a vertical line
     required String path,
-    required double length,
+    double length = 0,
     num offset = 0,
     num repeat = 20,
     PatternRepeatMode repeatMode = PatternRepeatMode.pixels,
