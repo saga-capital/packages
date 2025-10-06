@@ -103,6 +103,7 @@ class MarkerController {
       //todo remove stream subscriptions
       _infoWindowShown = false;
       _marker!.visible = false;
+      _marker!.label = null;
       _marker!.map = null;
       _marker = null;
     }
