@@ -196,6 +196,7 @@ class LegacyMarkerController
   void remove() {
     if (_marker != null) {
       _infoWindowShown = false;
+      _marker!.label = null;
       _marker!.map = null;
       _marker = null;
 
