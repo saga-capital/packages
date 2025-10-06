@@ -662,24 +662,24 @@ class _GoogleMapState extends State<GoogleMap> {
 
   void onMarkerEnter(MarkerId markerId){
     final Marker? marker = _markers[markerId];
-    if (marker == null) {
-      throw UnknownMapObjectIdError('marker', markerId, 'onEnter');
+    if (marker != null) {
+      final VoidCallback? onEnter = marker.onEnter;
+      if (onEnter != null) {
+        onEnter();
+      }
     }
-    final VoidCallback? onEnter = marker.onEnter;
-    if (onEnter != null) {
-      onEnter();
-    }
+    // throw UnknownMapObjectIdError('marker', markerId, 'onEnter');
   }
 
   void onMarkerExit(MarkerId markerId){
     final Marker? marker = _markers[markerId];
-    if (marker == null) {
-      throw UnknownMapObjectIdError('marker', markerId, 'onExit');
+    if (marker != null) {
+      final VoidCallback? onExit = marker.onExit;
+      if (onExit != null) {
+        onExit();
+      }
     }
-    final VoidCallback? onExit = marker.onExit;
-    if (onExit != null) {
-      onExit();
-    }
+    // throw UnknownMapObjectIdError('marker', markerId, 'onExit');
   }
 
   void onPolygonTap(PolygonId polygonId) {
