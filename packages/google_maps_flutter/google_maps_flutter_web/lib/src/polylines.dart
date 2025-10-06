@@ -41,6 +41,12 @@ class PolylinesController extends GeometryController {
       onTap: () {
         _onPolylineTap(polyline.polylineId);
       },
+      onMouseOver: (gmaps.LatLng latLng) {
+        _onPolylineMouseOver(polyline.polylineId, latLng);
+      },
+      onMouseOut: (gmaps.LatLng latLng) {
+        _onPolylineMouseOut(polyline.polylineId, latLng);
+      },
     );
     _polylineIdToController[polyline.polylineId] = controller;
   }
@@ -78,5 +84,13 @@ class PolylinesController extends GeometryController {
     // Comment here: https://github.com/flutter/flutter/issues/64084
     _streamController.add(PolylineTapEvent(mapId, polylineId));
     return _polylineIdToController[polylineId]?.consumeTapEvents ?? false;
+  }
+
+  void _onPolylineMouseOver(PolylineId polylineId, gmaps.LatLng latLng) {
+    _streamController.add(PolylineOverEvent(mapId, gmLatLngToLatLng(latLng), polylineId));
+  }
+
+  void _onPolylineMouseOut(PolylineId polylineId, gmaps.LatLng latLng) {
+    _streamController.add(PolylineOutEvent(mapId, gmLatLngToLatLng(latLng), polylineId));
   }
 }

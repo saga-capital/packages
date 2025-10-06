@@ -129,6 +129,16 @@ class GoogleMapController {
           ),
     );
     _streamSubscriptions.add(
+        GoogleMapsFlutterPlatform.instance
+            .onPolylineEnter(mapId: mapId)
+            .listen((PolylineOverEvent e) =>
+                _googleMapState.onPolylineEnter(e.value, e.position)),
+    );
+    _streamSubscriptions.add( GoogleMapsFlutterPlatform.instance
+        .onPolylineExit(mapId: mapId)
+        .listen((PolylineOutEvent e) => _googleMapState.onPolylineExit(e.value, e.position))
+    );
+    _streamSubscriptions.add(
       GoogleMapsFlutterPlatform.instance
           .onPolygonTap(mapId: mapId)
           .listen((PolygonTapEvent e) => _googleMapState.onPolygonTap(e.value)),

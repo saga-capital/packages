@@ -678,6 +678,29 @@ class _GoogleMapState extends State<GoogleMap> {
     }
   }
 
+
+  void onPolylineEnter(PolylineId polylineId, LatLng position) {
+    final Polyline? polyline = _polylines[polylineId];
+    if (polyline == null) {
+      throw UnknownMapObjectIdError('polyline', polylineId, 'onEnter');
+    }
+    final ValueChanged<LatLng>? onEnter = polyline.onMouseOver;
+    if (onEnter != null) {
+      onEnter(position);
+    }
+  }
+
+  void onPolylineExit(PolylineId polylineId, LatLng position) {
+    final Polyline? polyline = _polylines[polylineId];
+    if (polyline == null) {
+      throw UnknownMapObjectIdError('polyline', polylineId, 'onExit');
+    }
+    final ValueChanged<LatLng>? onExit = polyline.onMouseOut;
+    if (onExit != null) {
+      onExit(position);
+    }
+  }
+
   void onCircleTap(CircleId circleId) {
     final Circle? circle = _circles[circleId];
     if (circle == null) {
