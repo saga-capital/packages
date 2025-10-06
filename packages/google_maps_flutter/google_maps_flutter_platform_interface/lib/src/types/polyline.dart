@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import 'package:flutter/foundation.dart'
-    show VoidCallback, immutable, listEquals;
+    show ValueChanged, VoidCallback, immutable, listEquals;
 import 'package:flutter/material.dart' show Color, Colors;
 
 import 'types.dart';
@@ -37,6 +37,8 @@ class Polyline implements MapsObject<Polyline> {
     this.width = 10,
     this.zIndex = 0,
     this.onTap,
+    this.onMouseOver,
+    this.onMouseOut,
   });
 
   /// Uniquely identifies a [Polyline].
@@ -115,6 +117,12 @@ class Polyline implements MapsObject<Polyline> {
   /// Callbacks to receive tap events for polyline placed on this map.
   final VoidCallback? onTap;
 
+  /// Callback to receive mouse over events for polyline placed on this map.
+  final ValueChanged<LatLng>? onMouseOver;
+
+  /// Callback to receive mouse out events for polyline placed on this map.
+  final ValueChanged<LatLng>? onMouseOut;
+
   /// Creates a new [Polyline] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
   Polyline copyWith({
@@ -130,6 +138,8 @@ class Polyline implements MapsObject<Polyline> {
     int? widthParam,
     int? zIndexParam,
     VoidCallback? onTapParam,
+    ValueChanged<LatLng>? onMouseOverParam,
+    ValueChanged<LatLng>? onMouseOutParam,
   }) {
     return Polyline(
       polylineId: polylineId,
@@ -145,6 +155,8 @@ class Polyline implements MapsObject<Polyline> {
       width: widthParam ?? width,
       onTap: onTapParam ?? onTap,
       zIndex: zIndexParam ?? zIndex,
+      onMouseOver: onMouseOverParam ?? onMouseOver,
+      onMouseOut: onMouseOutParam ?? onMouseOut,
     );
   }
 

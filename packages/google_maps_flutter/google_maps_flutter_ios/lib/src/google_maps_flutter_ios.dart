@@ -187,6 +187,16 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
   }
 
   @override
+  Stream<PolylineOverEvent> onPolylineEnter({required int mapId}){
+    return _events(mapId).whereType<PolylineOverEvent>();
+  }
+
+  @override
+  Stream<PolylineOutEvent> onPolylineExit({required int mapId}){
+    return _events(mapId).whereType<PolylineOutEvent>();
+  }
+
+  @override
   Stream<PolygonTapEvent> onPolygonTap({required int mapId}) {
     return _events(mapId).whereType<PolygonTapEvent>();
   }
