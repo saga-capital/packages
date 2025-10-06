@@ -11,11 +11,23 @@ class PolylineController {
     required gmaps.Polyline polyline,
     bool consumeTapEvents = false,
     VoidCallback? onTap,
+    LatLngCallback? onMouseOver,
+    LatLngCallback? onMouseOut,
   }) : _polyline = polyline,
        _consumeTapEvents = consumeTapEvents {
     if (onTap != null) {
       polyline.onClick.listen((gmaps.PolyMouseEvent event) {
         onTap.call();
+      });
+    }
+    if(onMouseOver != null) {
+      polyline.onMouseover.listen((gmaps.PolyMouseEvent event) {
+        onMouseOver.call(event.latLng ?? _nullGmapsLatLng);
+      });
+    }
+    if(onMouseOut != null) {
+      polyline.onMouseout.listen((gmaps.PolyMouseEvent event) {
+        onMouseOut.call(event.latLng ?? _nullGmapsLatLng);
       });
     }
   }

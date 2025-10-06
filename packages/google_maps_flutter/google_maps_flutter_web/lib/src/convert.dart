@@ -515,14 +515,6 @@ Future<gmaps.MarkerOptions> _markerOptionsFromMarker(
   Marker marker,
   gmaps.Marker? currentMarker,
 ) async {
-  //todo check if can be removed
-  // final Offset anchor = marker.anchor;
-  // final gmaps.Point? anchorPoint = anchor == Offset.zero
-  //     ? null
-  //     : gmaps.Point(anchor.dx.toInt(), anchor.dy.toInt());
-  //
-  // final gmaps.Icon? icon = await gmIconFromBitmapDescriptor(marker.icon);
-  //
   return gmaps.MarkerOptions()
     ..position = gmaps.LatLng(
       marker.position.latitude,
