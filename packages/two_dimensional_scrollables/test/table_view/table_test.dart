@@ -174,6 +174,161 @@ void main() {
           ),
         ),
       );
+      // Trailing pinned columns/rows validation
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            rowCount: 1,
+            trailingPinnedColumnCount: -1, // asserts
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('trailingPinnedColumnCount >= 0'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            rowCount: 1,
+            trailingPinnedRowCount: -1, // asserts
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('trailingPinnedRowCount >= 0'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            trailingPinnedColumnCount: 2, // asserts
+            rowCount: 1,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('columnCount >= trailingPinnedColumnCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            trailingPinnedRowCount: 2, // asserts
+            rowCount: 1,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('rowCount >= trailingPinnedRowCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 3,
+            pinnedColumnCount: 2,
+            trailingPinnedColumnCount: 2, // asserts (2 + 2 > 3)
+            rowCount: 1,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('pinnedColumnCount and trailingPinnedColumnCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            pinnedRowCount: 2,
+            trailingPinnedRowCount: 2, // asserts (2 + 2 > 3)
+            rowCount: 3,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('pinnedRowCount and trailingPinnedRowCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            // columnCount omitted - infinite columns
+            trailingPinnedColumnCount: 1, // asserts
+            rowCount: 1,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('trailingPinnedColumnCount requires a finite columnCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            // rowCount omitted - infinite rows
+            trailingPinnedRowCount: 1, // asserts
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('trailingPinnedRowCount requires a finite rowCount'),
+          ),
+        ),
+      );
       expect(tableView, isNull);
     });
 
