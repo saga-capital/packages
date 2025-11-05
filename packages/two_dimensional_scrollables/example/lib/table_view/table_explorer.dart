@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'infinite_table.dart';
 import 'merged_table.dart';
+import 'pinned_table.dart';
 import 'simple_table.dart';
 
 /// The page containing the interactive controls that modify the sample
@@ -29,6 +30,9 @@ enum TableType {
 
   /// Displays InfiniteTableExample.
   infinite,
+
+  /// Displays PinnedTableExample.
+  pinned,
 }
 
 class _TableExplorerState extends State<TableExplorer> {
@@ -39,6 +43,7 @@ class _TableExplorerState extends State<TableExplorer> {
       TableType.simple => 'Simple TableView',
       TableType.merged => 'Merged cells in TableView',
       TableType.infinite => 'Infinite TableView',
+      TableType.pinned => 'Pinned rows & columns',
     };
   }
 
@@ -47,6 +52,7 @@ class _TableExplorerState extends State<TableExplorer> {
       TableType.simple => const TableExample(),
       TableType.merged => const MergedTableExample(),
       TableType.infinite => const InfiniteTableExample(),
+      TableType.pinned => const PinnedTableExample(),
     };
   }
 
@@ -74,6 +80,9 @@ class _TableExplorerState extends State<TableExplorer> {
                 _spacer,
                 const Radio<TableType>(value: TableType.infinite),
                 const Text('Infinite'),
+                _spacer,
+                const Radio<TableType>(value: TableType.pinned),
+                const Text('Pinned'),
               ],
             ),
           ),

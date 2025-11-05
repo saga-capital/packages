@@ -612,6 +612,28 @@ class _GoogleMapState extends State<GoogleMap> {
     }
   }
 
+  void onMarkerEnter(MarkerId markerId){
+    final Marker? marker = _markers[markerId];
+    if (marker != null) {
+      final VoidCallback? onEnter = marker.onEnter;
+      if (onEnter != null) {
+        onEnter();
+      }
+    }
+    // throw UnknownMapObjectIdError('marker', markerId, 'onEnter');
+  }
+
+  void onMarkerExit(MarkerId markerId){
+    final Marker? marker = _markers[markerId];
+    if (marker != null) {
+      final VoidCallback? onExit = marker.onExit;
+      if (onExit != null) {
+        onExit();
+      }
+    }
+    // throw UnknownMapObjectIdError('marker', markerId, 'onExit');
+  }
+
   void onPolygonTap(PolygonId polygonId) {
     final Polygon? polygon = _polygons[polygonId];
     if (polygon == null) {
@@ -623,6 +645,28 @@ class _GoogleMapState extends State<GoogleMap> {
     }
   }
 
+  void onPolygonEnter(PolygonId polygonId) {
+    final Polygon? polygon = _polygons[polygonId];
+    if (polygon == null) {
+      throw UnknownMapObjectIdError('polygon', polygonId, 'onTap');
+    }
+    final VoidCallback? onEnter = polygon.onEnter;
+    if (onEnter != null) {
+      onEnter();
+    }
+  }
+
+  void onPolygonExit(PolygonId polygonId) {
+    final Polygon? polygon = _polygons[polygonId];
+    if (polygon == null) {
+      throw UnknownMapObjectIdError('polygon', polygonId, 'onTap');
+    }
+    final VoidCallback? onExit = polygon.onExit;
+    if (onExit != null) {
+      onExit();
+    }
+  }
+
   void onPolylineTap(PolylineId polylineId) {
     final Polyline? polyline = _polylines[polylineId];
     if (polyline == null) {
@@ -631,6 +675,29 @@ class _GoogleMapState extends State<GoogleMap> {
     final VoidCallback? onTap = polyline.onTap;
     if (onTap != null) {
       onTap();
+    }
+  }
+
+
+  void onPolylineEnter(PolylineId polylineId, LatLng position) {
+    final Polyline? polyline = _polylines[polylineId];
+    if (polyline == null) {
+      throw UnknownMapObjectIdError('polyline', polylineId, 'onEnter');
+    }
+    final ValueChanged<LatLng>? onEnter = polyline.onMouseOver;
+    if (onEnter != null) {
+      onEnter(position);
+    }
+  }
+
+  void onPolylineExit(PolylineId polylineId, LatLng position) {
+    final Polyline? polyline = _polylines[polylineId];
+    if (polyline == null) {
+      throw UnknownMapObjectIdError('polyline', polylineId, 'onExit');
+    }
+    final ValueChanged<LatLng>? onExit = polyline.onMouseOut;
+    if (onExit != null) {
+      onExit(position);
     }
   }
 

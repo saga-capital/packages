@@ -16,6 +16,8 @@ class MarkerController {
     LatLngCallback? onDragEnd,
     VoidCallback? onTap,
     ClusterManagerId? clusterManagerId,
+    VoidCallback? onEnter,
+    VoidCallback? onExit,
   }) : _marker = marker,
        _infoWindow = infoWindow,
        _consumeTapEvents = consumeTapEvents,
@@ -41,6 +43,16 @@ class MarkerController {
       marker.onDragend.listen((gmaps.MapMouseEvent event) {
         marker.position = event.latLng;
         onDragEnd.call(event.latLng ?? _nullGmapsLatLng);
+      });
+    }
+    if (onEnter != null) {
+      marker.onMouseover.listen((gmaps.MapMouseEvent event) {
+        onEnter?.call();
+      });
+    }
+    if (onExit != null) {
+      marker.onMouseout.listen((gmaps.MapMouseEvent event) {
+        onExit?.call();
       });
     }
   }
@@ -88,8 +100,10 @@ class MarkerController {
   /// Disposes of the currently wrapped [gmaps.Marker].
   void remove() {
     if (_marker != null) {
+      //todo remove stream subscriptions
       _infoWindowShown = false;
       _marker!.visible = false;
+      _marker!.label = null;
       _marker!.map = null;
       _marker = null;
     }

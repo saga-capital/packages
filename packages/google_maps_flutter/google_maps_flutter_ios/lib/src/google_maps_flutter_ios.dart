@@ -111,7 +111,7 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
   }
 
   @override
-  Future<void> init(int mapId) {
+  Future<void> init(int mapId, {MapObjects? initMapObject}) {
     ensureHandlerInitialized(mapId);
     final MapsApi hostApi = ensureApiInitialized(mapId);
     return hostApi.waitForMap();
@@ -156,6 +156,16 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
   }
 
   @override
+  Stream<MarkerEnterEvent> onMarkerEnter({required int mapId}) {
+    return _events(mapId).whereType<MarkerEnterEvent>();
+  }
+
+  @override
+  Stream<MarkerExitEvent> onMarkerExit({required int mapId}) {
+    return _events(mapId).whereType<MarkerExitEvent>();
+  }
+
+  @override
   Stream<InfoWindowTapEvent> onInfoWindowTap({required int mapId}) {
     return _events(mapId).whereType<InfoWindowTapEvent>();
   }
@@ -181,8 +191,28 @@ class GoogleMapsFlutterIOS extends GoogleMapsFlutterPlatform {
   }
 
   @override
+  Stream<PolylineOverEvent> onPolylineEnter({required int mapId}){
+    return _events(mapId).whereType<PolylineOverEvent>();
+  }
+
+  @override
+  Stream<PolylineOutEvent> onPolylineExit({required int mapId}){
+    return _events(mapId).whereType<PolylineOutEvent>();
+  }
+
+  @override
   Stream<PolygonTapEvent> onPolygonTap({required int mapId}) {
     return _events(mapId).whereType<PolygonTapEvent>();
+  }
+
+  @override
+  Stream<PolygonEnterEvent> onPolygonEnter({required int mapId}) {
+    return _events(mapId).whereType<PolygonEnterEvent>();
+  }
+
+  @override
+  Stream<PolygonExitEvent> onPolygonExit({required int mapId}) {
+    return _events(mapId).whereType<PolygonExitEvent>();
   }
 
   @override

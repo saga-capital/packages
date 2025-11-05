@@ -28,6 +28,8 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
+  static MapObjects? initMapObjects;
+
   static GoogleMapsFlutterPlatform _instance = MethodChannelGoogleMapsFlutter();
 
   /// The default instance of [GoogleMapsFlutterPlatform] to use.
@@ -45,7 +47,7 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
   /// /// Initializes the platform interface with [id].
   ///
   /// This method is called when the plugin is first initialized.
-  Future<void> init(int mapId) {
+  Future<void> init(int mapId,{MapObjects? initMapObject}) {
     throw UnimplementedError('init() has not been implemented.');
   }
 
@@ -369,14 +371,44 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('onMarkerDragEnd() has not been implemented.');
   }
 
+  /// A [Marker] has been entered by mouse.
+  Stream<MarkerEnterEvent> onMarkerEnter({required int mapId}){
+    throw UnimplementedError('onMarkerEnter() has not been implemented.');
+  }
+
+  /// A [Marker] has been exited by mouse.
+  Stream<MarkerExitEvent> onMarkerExit({required int mapId}){
+    throw UnimplementedError('onMarkerExit() has not been implemented.');
+  }
+
   /// A [Polyline] has been tapped.
   Stream<PolylineTapEvent> onPolylineTap({required int mapId}) {
     throw UnimplementedError('onPolylineTap() has not been implemented.');
   }
 
+  /// A [Polyline] has been entered by mouse.
+  Stream<PolylineOverEvent> onPolylineEnter({required int mapId}){
+    throw UnimplementedError('onPolylineEnter()has not been implemented.');
+  }
+
+  /// A [Polyline] has been exited by mouse.
+  Stream<PolylineOutEvent> onPolylineExit({required int mapId}){
+    throw UnimplementedError('onPolylineExit()has not been implemented.');
+  }
+
   /// A [Polygon] has been tapped.
   Stream<PolygonTapEvent> onPolygonTap({required int mapId}) {
     throw UnimplementedError('onPolygonTap() has not been implemented.');
+  }
+
+  /// A [Polygon] has been entered by mouse.
+  Stream<PolygonEnterEvent> onPolygonEnter({required int mapId}){
+    throw UnimplementedError('onPolygonEnter()has not been implemented.');
+  }
+
+  /// A [Polygon] has been exited by mouse.
+  Stream<PolygonExitEvent> onPolygonExit({required int mapId}){
+    throw UnimplementedError('onPolygonExit()has not been implemented.');
   }
 
   /// A [Circle] has been tapped.

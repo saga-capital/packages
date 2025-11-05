@@ -6,6 +6,7 @@ import 'dart:ui' show Offset;
 
 import 'package:flutter/foundation.dart'
     show ValueChanged, VoidCallback, immutable;
+import 'package:flutter/material.dart' show Color;
 
 import 'types.dart';
 
@@ -113,6 +114,89 @@ class MarkerId extends MapsObjectId<Marker> {
   const MarkerId(super.value);
 }
 
+@immutable
+class MarkerLabel {
+  const MarkerLabel({
+    required this.text,
+    this.color,
+    this.fontSize,
+    this.fontFamily,
+    this.fontWeight,
+    this.className,
+  });
+
+  static const MarkerLabel noLabel = MarkerLabel(text: '');
+
+  final String text;
+  final Color? color;
+  final String? fontSize;
+  final String? fontFamily;
+  final String? fontWeight;
+  final String? className;
+
+  MarkerLabel copyWith({
+    String? textParam,
+    Color? colorParam,
+    String? fontSizeParam,
+    String? fontFamilyParam,
+    String? fontWeightParam,
+    String? classNameParam,
+  }) {
+    return MarkerLabel(
+      text: textParam ?? text,
+      color: colorParam ?? color,
+      fontSize: fontSizeParam ?? fontSize,
+      fontFamily: fontFamilyParam ?? fontFamily,
+      fontWeight: fontWeightParam ?? fontWeight,
+      className: classNameParam ?? className,
+    );
+  }
+
+  Object toJson() {
+    final Map<String, Object> json = <String, Object>{};
+
+    void addIfPresent(String fieldName, Object? value) {
+      if (value != null) {
+        json[fieldName] = value;
+      }
+    }
+
+    addIfPresent('text', text);
+    addIfPresent('color', color?.value);
+    addIfPresent('fontSize', fontSize);
+    addIfPresent('fontFamily', fontFamily);
+    addIfPresent('fontWeight', fontWeight);
+    addIfPresent('className', className);
+
+    return json;
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (other.runtimeType != runtimeType) {
+      return false;
+    }
+    return other is MarkerLabel &&
+        text == other.text &&
+        color == other.color &&
+        fontSize == other.fontSize &&
+        fontFamily == other.fontFamily &&
+        fontWeight == other.fontWeight &&
+        className == other.className;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      text.hashCode, color, fontSize, fontFamily, fontWeight, className);
+
+  @override
+  String toString() =>
+      'MarkerLabel{text: $text, color: $color, fontSize: $fontSize, fontFamily: $fontFamily, fontWeight: $fontWeight, className: $className}';
+}
+
 /// Marks a geographical location on the map.
 ///
 /// A marker icon is drawn oriented against the device's screen rather than
@@ -150,6 +234,7 @@ class Marker implements MapsObject<Marker> {
     this.flat = false,
     this.icon = BitmapDescriptor.defaultMarker,
     this.infoWindow = InfoWindow.noText,
+    this.markerLabel = MarkerLabel.noLabel,
     this.position = const LatLng(0.0, 0.0),
     this.rotation = 0.0,
     this.visible = true,
@@ -164,6 +249,9 @@ class Marker implements MapsObject<Marker> {
     this.onDrag,
     this.onDragStart,
     this.onDragEnd,
+    this.onEnter,
+    this.onExit,
+    this.animate = false,
   }) : assert(0.0 <= alpha && alpha <= 1.0),
        assert(
          zIndex == 0.0 || zIndexInt == 0,
@@ -218,6 +306,8 @@ class Marker implements MapsObject<Marker> {
   /// The window is displayed when the marker is tapped.
   final InfoWindow infoWindow;
 
+  final MarkerLabel markerLabel;
+
   /// Geographical location of the marker.
   final LatLng position;
 
@@ -260,6 +350,14 @@ class Marker implements MapsObject<Marker> {
   /// Signature reporting the new [LatLng] during the drag event.
   final ValueChanged<LatLng>? onDrag;
 
+  /// Callbacks to receive enter events for markers placed on this map.
+  final VoidCallback? onEnter;
+
+  /// Callbacks to receive exit events for markers placed on this map.
+  final VoidCallback? onExit;
+
+  final bool animate;
+
   /// Creates a new [Marker] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
   Marker copyWith({
@@ -270,6 +368,7 @@ class Marker implements MapsObject<Marker> {
     bool? flatParam,
     BitmapDescriptor? iconParam,
     InfoWindow? infoWindowParam,
+    MarkerLabel? markerLabelParam,
     LatLng? positionParam,
     double? rotationParam,
     bool? visibleParam,
@@ -283,6 +382,9 @@ class Marker implements MapsObject<Marker> {
     ValueChanged<LatLng>? onDragStartParam,
     ValueChanged<LatLng>? onDragParam,
     ValueChanged<LatLng>? onDragEndParam,
+    VoidCallback? onEnterParam,
+    VoidCallback? onExitParam,
+    bool? animate,
     ClusterManagerId? clusterManagerIdParam,
   }) {
     assert(
@@ -298,6 +400,7 @@ class Marker implements MapsObject<Marker> {
       flat: flatParam ?? flat,
       icon: iconParam ?? icon,
       infoWindow: infoWindowParam ?? infoWindow,
+      markerLabel: markerLabelParam ?? markerLabel,
       position: positionParam ?? position,
       rotation: rotationParam ?? rotation,
       visible: visibleParam ?? visible,
@@ -306,6 +409,9 @@ class Marker implements MapsObject<Marker> {
       onDragStart: onDragStartParam ?? onDragStart,
       onDrag: onDragParam ?? onDrag,
       onDragEnd: onDragEndParam ?? onDragEnd,
+      onEnter: onEnterParam ?? onEnter,
+      onExit: onExitParam ?? onExit,
+      animate: animate ?? this.animate,
       clusterManagerId: clusterManagerIdParam ?? clusterManagerId,
     );
   }
@@ -333,11 +439,13 @@ class Marker implements MapsObject<Marker> {
     addIfPresent('flat', flat);
     addIfPresent('icon', icon.toJson());
     addIfPresent('infoWindow', infoWindow.toJson());
+    addIfPresent('markerLabel', markerLabel.toJson());
     addIfPresent('position', position.toJson());
     addIfPresent('rotation', rotation);
     addIfPresent('visible', visible);
     addIfPresent('zIndex', zIndex);
     addIfPresent('zIndexInt', zIndexInt);
+    addIfPresent('animate', animate);
     addIfPresent('clusterManagerId', clusterManagerId?.value);
     return json;
   }
@@ -359,11 +467,13 @@ class Marker implements MapsObject<Marker> {
         flat == other.flat &&
         icon == other.icon &&
         infoWindow == other.infoWindow &&
+        markerLabel == other.markerLabel &&
         position == other.position &&
         rotation == other.rotation &&
         visible == other.visible &&
         zIndex == other.zIndex &&
         zIndexInt == other.zIndexInt &&
+        animate == other.animate &&
         clusterManagerId == other.clusterManagerId;
   }
 
@@ -374,8 +484,10 @@ class Marker implements MapsObject<Marker> {
   String toString() {
     return 'Marker{markerId: $markerId, alpha: $alpha, anchor: $anchor, '
         'consumeTapEvents: $consumeTapEvents, draggable: $draggable, flat: $flat, '
-        'icon: $icon, infoWindow: $infoWindow, position: $position, rotation: $rotation, '
-        'visible: $visible, zIndex: $zIndex, onTap: $onTap, onDragStart: $onDragStart, '
-        'onDrag: $onDrag, onDragEnd: $onDragEnd, clusterManagerId: $clusterManagerId}';
+        'icon: $icon, infoWindow: $infoWindow, markerLabel: $markerLabel, '
+        'position: $position, rotation: $rotation, visible: $visible, zIndex: $zIndex, '
+        'onTap: $onTap, onDragStart: $onDragStart, onDrag: $onDrag, '
+        'onDragEnd: $onDragEnd, clusterManagerId: $clusterManagerId, '
+        'animate: $animate}';
   }
 }

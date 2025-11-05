@@ -318,6 +318,22 @@ gmaps.InfoWindowOptions? _infoWindowOptionsFromMarker(Marker marker) {
   // and the marker.infoWindow.anchor property.
 }
 
+gmaps.MarkerLabel? _markerLabelFromMarker(Marker marker) {
+  if (marker.markerLabel.text.isEmpty) {
+    return null;
+  }
+
+  return gmaps.MarkerLabel()
+    ..text = sanitizeHtml(marker.markerLabel.text)
+    ..color = marker.markerLabel.color != null
+        ? _getCssColor(marker.markerLabel.color!)
+        : null
+    ..fontFamily = marker.markerLabel.fontFamily
+    ..fontSize = marker.markerLabel.fontSize
+    ..fontWeight = marker.markerLabel.fontWeight
+    ..className = marker.markerLabel.className;
+}
+
 // Attempts to extract a [gmaps.Size] from `iconConfig[sizeIndex]`.
 gmaps.Size? _gmSizeFromIconConfig(List<Object?> iconConfig, int sizeIndex) {
   gmaps.Size? size;
@@ -504,7 +520,9 @@ Future<gmaps.MarkerOptions> _markerOptionsFromMarker(
       marker.position.latitude,
       marker.position.longitude,
     )
+    ..animation = marker.animate ? gmaps.Animation.BOUNCE : null
     ..title = sanitizeHtml(marker.infoWindow.title ?? '')
+    ..label = _markerLabelFromMarker(marker)
     // The deprecated parameter is used here to avoid losing precision.
     // ignore: deprecated_member_use
     ..zIndex = marker.zIndex
@@ -593,6 +611,7 @@ gmaps.PolygonOptions _polygonOptionsFromPolygon(
     ..paths = paths.map((List<gmaps.LatLng> e) => e.toJS).toList().toJS
     ..strokeColor = _getCssColor(polygon.strokeColor)
     ..strokeOpacity = _getCssOpacity(polygon.strokeColor)
+    ..clickable = polygon.clickable
     ..strokeWeight = polygon.strokeWidth
     ..fillColor = _getCssColor(polygon.fillColor)
     ..fillOpacity = _getCssOpacity(polygon.fillColor)
@@ -654,6 +673,7 @@ gmaps.PolylineOptions _polylineOptionsFromPolyline(
   final List<gmaps.LatLng> paths =
       polyline.points.map(_latLngToGmLatLng).toList();
 
+  final List<gmaps.IconSequence>? icons = _getIconSequences(polyline);
   return gmaps.PolylineOptions()
     ..path = paths.toJS
     ..strokeWeight = polyline.width
@@ -661,6 +681,7 @@ gmaps.PolylineOptions _polylineOptionsFromPolyline(
     ..strokeOpacity = _getCssOpacity(polyline.color)
     ..visible = polyline.visible
     ..zIndex = polyline.zIndex
+    ..icons = icons
     ..geodesic = polyline.geodesic
     ..clickable = polyline.consumeTapEvents;
   //  this.endCap = Cap.buttCap,
@@ -668,6 +689,37 @@ gmaps.PolylineOptions _polylineOptionsFromPolyline(
   //  this.patterns = const <PatternItem>[],
   //  this.startCap = Cap.buttCap,
   //  this.width = 10,
+}
+
+List<gmaps.IconSequence>? _getIconSequences(Polyline polyline) {
+  if (!polyline.patterns.every(
+    (PatternItem element) => element is WebPatternItem,
+  )) {
+    return null;
+  }
+  final List<gmaps.IconSequence> icons = <gmaps.IconSequence>[];
+  for (final PatternItem item in polyline.patterns) {
+    final WebPatternItem webItem = item as WebPatternItem;
+    icons.add(gmaps.IconSequence(
+      offset: webItem.offset.toString(),
+      repeat: '${webItem.repeat}${webItem.repeatMode.asString}',
+      icon: gmaps.Symbol()
+        ..strokeOpacity = _getCssOpacity(webItem.strokeColor)
+        ..strokeColor = _getCssColor(webItem.strokeColor)
+        ..strokeWeight = webItem.strokeWeight
+        ..fillColor =
+            webItem.fillColor != null ? _getCssColor(webItem.fillColor!) : null
+        ..fillOpacity = webItem.fillColor != null
+            ? _getCssOpacity(webItem.fillColor!)
+            : null
+        ..path = webItem.path == WebPatternItem.dotPath
+            ? gmaps.SymbolPath.CIRCLE
+            : (webItem.path.toJS)
+        ..rotation = webItem.rotation
+        ..scale = webItem.scale,
+    ));
+  }
+  return icons;
 }
 
 // Translates a [CameraUpdate] into operations on a [gmaps.Map].

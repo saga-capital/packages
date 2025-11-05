@@ -174,6 +174,161 @@ void main() {
           ),
         ),
       );
+      // Trailing pinned columns/rows validation
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            rowCount: 1,
+            trailingPinnedColumnCount: -1, // asserts
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('trailingPinnedColumnCount >= 0'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            rowCount: 1,
+            trailingPinnedRowCount: -1, // asserts
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('trailingPinnedRowCount >= 0'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            trailingPinnedColumnCount: 2, // asserts
+            rowCount: 1,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('columnCount >= trailingPinnedColumnCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            trailingPinnedRowCount: 2, // asserts
+            rowCount: 1,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('rowCount >= trailingPinnedRowCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 3,
+            pinnedColumnCount: 2,
+            trailingPinnedColumnCount: 2, // asserts (2 + 2 > 3)
+            rowCount: 1,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('pinnedColumnCount and trailingPinnedColumnCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            pinnedRowCount: 2,
+            trailingPinnedRowCount: 2, // asserts (2 + 2 > 3)
+            rowCount: 3,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('pinnedRowCount and trailingPinnedRowCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            // columnCount omitted - infinite columns
+            trailingPinnedColumnCount: 1, // asserts
+            rowCount: 1,
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('trailingPinnedColumnCount requires a finite columnCount'),
+          ),
+        ),
+      );
+      expect(
+        () {
+          tableView = TableView.builder(
+            cellBuilder: (_, __) => cell,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            columnCount: 1,
+            // rowCount omitted - infinite rows
+            trailingPinnedRowCount: 1, // asserts
+          );
+        },
+        throwsA(
+          isA<AssertionError>().having(
+            (AssertionError error) => error.toString(),
+            'description',
+            contains('trailingPinnedRowCount requires a finite rowCount'),
+          ),
+        ),
+      );
       expect(tableView, isNull);
     });
 
@@ -4188,6 +4343,90 @@ void main() {
       expect(
         tester.getRect(find.text('Tile c: 2, r: 2')),
         const Rect.fromLTWH(190.0, 190.0, 200.0, 200.0),
+      );
+    },
+  );
+
+  testWidgets(
+    'trailing pinned columns positioned correctly when viewport has extra space',
+    (WidgetTester tester) async {
+      // Create a table where:
+      // - Viewport width is 800px
+      // - 5 columns of 100px each (total 500px)
+      // - Last 2 columns are trailing pinned
+      // Expected behavior: trailing pinned columns should be positioned
+      // immediately after regular columns (at x=300), not at the trailing
+      // edge of the viewport (at x=600).
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TableView.builder(
+            columnCount: 5,
+            rowCount: 3,
+            trailingPinnedColumnCount: 2,
+            columnBuilder: (_) => span,
+            rowBuilder: (_) => span,
+            cellBuilder: (_, TableVicinity vicinity) {
+              return TableViewCell(
+                child: SizedBox.square(
+                  dimension: 100,
+                  child: Text('C${vicinity.column}:R${vicinity.row}'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify regular columns are positioned as expected
+      expect(find.text('C0:R0'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('C0:R0')),
+        const Rect.fromLTRB(0.0, 0.0, 100.0, 100.0),
+      );
+
+      expect(find.text('C1:R0'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('C1:R0')),
+        const Rect.fromLTRB(100.0, 0.0, 200.0, 100.0),
+      );
+
+      expect(find.text('C2:R0'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('C2:R0')),
+        const Rect.fromLTRB(200.0, 0.0, 300.0, 100.0),
+      );
+
+      // Verify trailing pinned columns are positioned immediately after
+      // regular columns, without extra space in between
+      expect(find.text('C3:R0'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('C3:R0')),
+        const Rect.fromLTRB(300.0, 0.0, 400.0, 100.0),
+        reason: 'First trailing pinned column should be at x=300, '
+            'immediately after the last regular column',
+      );
+
+      expect(find.text('C4:R0'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('C4:R0')),
+        const Rect.fromLTRB(400.0, 0.0, 500.0, 100.0),
+        reason: 'Last trailing pinned column should be at x=400, '
+            'immediately after the first trailing pinned column',
+      );
+
+      // Verify second row has same horizontal positioning
+      expect(find.text('C3:R1'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('C3:R1')),
+        const Rect.fromLTRB(300.0, 100.0, 400.0, 200.0),
+      );
+
+      expect(find.text('C4:R1'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('C4:R1')),
+        const Rect.fromLTRB(400.0, 100.0, 500.0, 200.0),
       );
     },
   );

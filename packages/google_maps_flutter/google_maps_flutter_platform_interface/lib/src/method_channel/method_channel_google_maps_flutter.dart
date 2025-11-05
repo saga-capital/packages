@@ -80,7 +80,7 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
   }
 
   @override
-  Future<void> init(int mapId) {
+  Future<void> init(int mapId, {MapObjects? initMapObject}) {
     final MethodChannel channel = ensureChannelInitialized(mapId);
     return channel.invokeMethod<void>('map#waitForMap');
   }
@@ -144,13 +144,43 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
   }
 
   @override
+  Stream<MarkerEnterEvent> onMarkerEnter({required int mapId}){
+    return _events(mapId).whereType<MarkerEnterEvent>();
+  }
+
+  @override
+  Stream<MarkerExitEvent> onMarkerExit({required int mapId}){
+    return _events(mapId).whereType<MarkerExitEvent>();
+  }
+
+  @override
   Stream<PolylineTapEvent> onPolylineTap({required int mapId}) {
     return _events(mapId).whereType<PolylineTapEvent>();
   }
 
   @override
+  Stream<PolylineOverEvent> onPolylineEnter({required int mapId}) {
+    return _events(mapId).whereType<PolylineOverEvent>();
+  }
+
+  @override
+  Stream<PolylineOutEvent> onPolylineExit({required int mapId}) {
+    return _events(mapId).whereType<PolylineOutEvent>();
+  }
+
+  @override
   Stream<PolygonTapEvent> onPolygonTap({required int mapId}) {
     return _events(mapId).whereType<PolygonTapEvent>();
+  }
+
+  @override
+  Stream<PolygonEnterEvent> onPolygonEnter({required int mapId}) {
+    return _events(mapId).whereType<PolygonEnterEvent>();
+  }
+
+  @override
+  Stream<PolygonExitEvent> onPolygonExit({required int mapId}) {
+    return _events(mapId).whereType<PolygonExitEvent>();
   }
 
   @override

@@ -25,6 +25,7 @@ class Polygon implements MapsObject<Polygon> {
   const Polygon({
     required this.polygonId,
     this.consumeTapEvents = false,
+    this.clickable = true,
     this.fillColor = Colors.black,
     this.geodesic = false,
     this.points = const <LatLng>[],
@@ -34,6 +35,8 @@ class Polygon implements MapsObject<Polygon> {
     this.visible = true,
     this.zIndex = 0,
     this.onTap,
+    this.onEnter,
+    this.onExit,
   });
 
   /// Uniquely identifies a [Polygon].
@@ -46,6 +49,9 @@ class Polygon implements MapsObject<Polygon> {
   ///
   /// If this is false, [onTap] callback will not be triggered.
   final bool consumeTapEvents;
+
+  /// Only works on WEB.
+  final bool clickable;
 
   /// Fill color in ARGB format, the same format used by Color. The default value is black (0xff000000).
   final Color fillColor;
@@ -93,6 +99,11 @@ class Polygon implements MapsObject<Polygon> {
   /// Callbacks to receive tap events for polygon placed on this map.
   final VoidCallback? onTap;
 
+  final VoidCallback? onEnter;
+
+  final VoidCallback? onExit;
+
+
   /// Creates a new [Polygon] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
   Polygon copyWith({
@@ -106,6 +117,9 @@ class Polygon implements MapsObject<Polygon> {
     bool? visibleParam,
     int? zIndexParam,
     VoidCallback? onTapParam,
+    VoidCallback? onEnterParam,
+    VoidCallback? onExitParam,
+    bool? clickableParam,
   }) {
     return Polygon(
       polygonId: polygonId,
@@ -118,7 +132,10 @@ class Polygon implements MapsObject<Polygon> {
       strokeWidth: strokeWidthParam ?? strokeWidth,
       visible: visibleParam ?? visible,
       onTap: onTapParam ?? onTap,
+      onEnter: onEnterParam ?? onEnter,
+      onExit: onExitParam ?? onExit,
       zIndex: zIndexParam ?? zIndex,
+      clickable: clickableParam ?? clickable,
     );
   }
 
