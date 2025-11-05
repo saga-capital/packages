@@ -383,11 +383,13 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
   }
 
   // How far columns should be laid out in a given frame.
+  // With unified offset space, column offsets include pinned columns,
+  // so we don't subtract pinnedColumnsExtent. We only subtract trailing
+  // pinned extent because those columns are positioned separately.
   double get _targetTrailingColumnPixel {
     return cacheExtent +
         horizontalOffset.pixels +
         viewportDimension.width -
-        _pinnedColumnsExtent -
         _trailingPinnedColumnsExtent;
   }
 
@@ -401,11 +403,13 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
   }
 
   // How far rows should be laid out in a given frame.
+  // With unified offset space, row offsets include pinned rows,
+  // so we don't subtract pinnedRowsExtent. We only subtract trailing
+  // pinned extent because those rows are positioned separately.
   double get _targetTrailingRowPixel {
     return cacheExtent +
         verticalOffset.pixels +
         viewportDimension.height -
-        _pinnedRowsExtent -
         _trailingPinnedRowsExtent;
   }
 
