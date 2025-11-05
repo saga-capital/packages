@@ -1037,12 +1037,47 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
             : null;
 
     // Calculate offsets for trailing pinned cells
-    // They should be positioned at the trailing edge of the viewport
+    // When there's extra space in the viewport (content is smaller than viewport),
+    // trailing pinned cells should be positioned immediately after regular content,
+    // not at the trailing edge of the viewport.
     // Note: These offsets are negative because _layoutCells negates the offset parameter
-    final double trailingPinnedColumnOffset =
-        -(viewportDimension.width - _trailingPinnedColumnsExtent);
-    final double trailingPinnedRowOffset =
-        -(viewportDimension.height - _trailingPinnedRowsExtent);
+    final double trailingPinnedColumnOffset;
+    if (_firstTrailingPinnedColumn != null &&
+        _columnMetrics.containsKey(_lastTrailingPinnedColumn)) {
+      // Calculate total content width
+      final double totalContentWidth =
+          _columnMetrics[_lastTrailingPinnedColumn]!.trailingOffset;
+      // If content fits within viewport, position trailing pinned columns
+      // immediately after regular columns. Otherwise, position at trailing edge.
+      if (totalContentWidth <= viewportDimension.width) {
+        trailingPinnedColumnOffset = -(totalContentWidth - _trailingPinnedColumnsExtent);
+      } else {
+        trailingPinnedColumnOffset =
+            -(viewportDimension.width - _trailingPinnedColumnsExtent);
+      }
+    } else {
+      trailingPinnedColumnOffset =
+          -(viewportDimension.width - _trailingPinnedColumnsExtent);
+    }
+
+    final double trailingPinnedRowOffset;
+    if (_firstTrailingPinnedRow != null &&
+        _rowMetrics.containsKey(_lastTrailingPinnedRow)) {
+      // Calculate total content height
+      final double totalContentHeight =
+          _rowMetrics[_lastTrailingPinnedRow]!.trailingOffset;
+      // If content fits within viewport, position trailing pinned rows
+      // immediately after regular rows. Otherwise, position at trailing edge.
+      if (totalContentHeight <= viewportDimension.height) {
+        trailingPinnedRowOffset = -(totalContentHeight - _trailingPinnedRowsExtent);
+      } else {
+        trailingPinnedRowOffset =
+            -(viewportDimension.height - _trailingPinnedRowsExtent);
+      }
+    } else {
+      trailingPinnedRowOffset =
+          -(viewportDimension.height - _trailingPinnedRowsExtent);
+    }
 
     // Layout pass 1: Leading pinned rows × Leading pinned columns (top-left)
     if (_lastPinnedRow != null && _lastPinnedColumn != null) {
