@@ -374,18 +374,20 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
   bool get _columnsAreInfinite => delegate.columnCount == null;
 
   // Where column layout begins, potentially outside of the visible area.
+  // With unified offset space, we need to add pinnedColumnsExtent because
+  // scroll position refers to scrolling through non-pinned content, but
+  // column offsets include the pinned space.
   double get _targetLeadingColumnPixel {
     return clampDouble(
-      horizontalOffset.pixels - cacheExtent,
+      horizontalOffset.pixels - cacheExtent + _pinnedColumnsExtent,
       0,
       double.infinity,
     );
   }
 
   // How far columns should be laid out in a given frame.
-  // With unified offset space, column offsets include pinned columns,
-  // so we don't subtract pinnedColumnsExtent. We only subtract trailing
-  // pinned extent because those columns are positioned separately.
+  // In unified offset space: scroll + viewport + cache - trailingPinned
+  // (pinnedExtent terms cancel out in the calculation)
   double get _targetTrailingColumnPixel {
     return cacheExtent +
         horizontalOffset.pixels +
@@ -398,14 +400,20 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
   bool get _rowsAreInfinite => delegate.rowCount == null;
 
   // Where row layout begins, potentially outside of the visible area.
+  // With unified offset space, we need to add pinnedRowsExtent because
+  // scroll position refers to scrolling through non-pinned content, but
+  // row offsets include the pinned space.
   double get _targetLeadingRowPixel {
-    return clampDouble(verticalOffset.pixels - cacheExtent, 0, double.infinity);
+    return clampDouble(
+      verticalOffset.pixels - cacheExtent + _pinnedRowsExtent,
+      0,
+      double.infinity,
+    );
   }
 
   // How far rows should be laid out in a given frame.
-  // With unified offset space, row offsets include pinned rows,
-  // so we don't subtract pinnedRowsExtent. We only subtract trailing
-  // pinned extent because those rows are positioned separately.
+  // In unified offset space: scroll + viewport + cache - trailingPinned
+  // (pinnedExtent terms cancel out in the calculation)
   double get _targetTrailingRowPixel {
     return cacheExtent +
         verticalOffset.pixels +
