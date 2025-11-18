@@ -1371,9 +1371,10 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
         double? mergedColumnOffset;
         columnOffset += colSpan.configuration.padding.leading;
 
-        final TableVicinity vicinity = TableVicinity(column: column, row: row);
+        // Use cached vicinity to avoid allocating hundreds per layout
+        final TableVicinity vicinity = _getCachedVicinity(column, row);
         final RenderBox? cell =
-            _mergedVicinities.keys.contains(vicinity)
+            _mergedVicinities.containsKey(vicinity)
                 ? null
                 : buildOrObtainChildFor(vicinity);
 
@@ -1537,10 +1538,8 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
                 if (cellParentData.columnMergeStart != null) {
                   _mergedColumns.add(currentColumn);
                 }
-                final TableVicinity key = TableVicinity(
-                  row: currentRow,
-                  column: currentColumn,
-                );
+                // Use cached vicinity to avoid allocating hundreds per merged cell
+                final TableVicinity key = _getCachedVicinity(currentColumn, currentRow);
                 _mergedVicinities[key] = vicinity;
                 currentColumn++;
               }
