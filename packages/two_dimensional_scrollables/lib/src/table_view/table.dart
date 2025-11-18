@@ -1563,10 +1563,10 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
         }
         columnOffset +=
             standardColumnWidth +
-            _columnMetrics[column]!.configuration.padding.trailing;
+            colSpan.configuration.padding.trailing;
       }
       rowOffset +=
-          standardRowHeight + _rowMetrics[row]!.configuration.padding.trailing;
+          standardRowHeight + rowSpan.configuration.padding.trailing;
     }
   }
 
