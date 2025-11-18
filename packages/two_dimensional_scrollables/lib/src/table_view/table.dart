@@ -369,6 +369,10 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
   int? _lastNonPinnedRow;
   int? _lastNonPinnedColumn;
 
+  // Cache trailing pinned extents to avoid repeated computation during paint
+  double _cachedTrailingPinnedColumnsExtent = 0.0;
+  double _cachedTrailingPinnedRowsExtent = 0.0;
+
   int? _columnNullTerminatedIndex;
 
   bool get _columnsAreInfinite => delegate.columnCount == null;
@@ -509,33 +513,37 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
     return total - 1;
   }
 
-  double get _trailingPinnedColumnsExtent {
-    final int? first = _firstTrailingPinnedColumn;
-    final int? last = _lastTrailingPinnedColumn;
-    if (first == null || last == null) {
-      return 0.0;
-    }
-    // Check if metrics have been computed for these columns
-    if (!_columnMetrics.containsKey(first) ||
-        !_columnMetrics.containsKey(last)) {
-      return 0.0;
-    }
-    return _columnMetrics[last]!.trailingOffset -
-        _columnMetrics[first]!.leadingOffset;
-  }
+  // Return cached trailing pinned extents for performance
+  double get _trailingPinnedColumnsExtent => _cachedTrailingPinnedColumnsExtent;
+  double get _trailingPinnedRowsExtent => _cachedTrailingPinnedRowsExtent;
 
-  double get _trailingPinnedRowsExtent {
-    final int? first = _firstTrailingPinnedRow;
-    final int? last = _lastTrailingPinnedRow;
-    if (first == null || last == null) {
-      return 0.0;
+  // Update cached trailing pinned extents after metrics are computed
+  void _updateTrailingPinnedExtents() {
+    // Update trailing pinned columns extent
+    final int? firstCol = _firstTrailingPinnedColumn;
+    final int? lastCol = _lastTrailingPinnedColumn;
+    if (firstCol != null && lastCol != null &&
+        _columnMetrics.containsKey(firstCol) &&
+        _columnMetrics.containsKey(lastCol)) {
+      _cachedTrailingPinnedColumnsExtent =
+          _columnMetrics[lastCol]!.trailingOffset -
+          _columnMetrics[firstCol]!.leadingOffset;
+    } else {
+      _cachedTrailingPinnedColumnsExtent = 0.0;
     }
-    // Check if metrics have been computed for these rows
-    if (!_rowMetrics.containsKey(first) || !_rowMetrics.containsKey(last)) {
-      return 0.0;
+
+    // Update trailing pinned rows extent
+    final int? firstRow = _firstTrailingPinnedRow;
+    final int? lastRow = _lastTrailingPinnedRow;
+    if (firstRow != null && lastRow != null &&
+        _rowMetrics.containsKey(firstRow) &&
+        _rowMetrics.containsKey(lastRow)) {
+      _cachedTrailingPinnedRowsExtent =
+          _rowMetrics[lastRow]!.trailingOffset -
+          _rowMetrics[firstRow]!.leadingOffset;
+    } else {
+      _cachedTrailingPinnedRowsExtent = 0.0;
     }
-    return _rowMetrics[last]!.trailingOffset -
-        _rowMetrics[first]!.leadingOffset;
   }
 
   @override
@@ -1020,9 +1028,13 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       _updateColumnMetrics();
       _updateRowMetrics();
       _updateScrollBounds();
+      // Update cached trailing pinned extents after metrics are computed
+      _updateTrailingPinnedExtents();
     } else {
       // Updates the visible cells based on cached table metrics.
       _updateFirstAndLastVisibleCell();
+      // Update cached trailing pinned extents in case visible cells changed
+      _updateTrailingPinnedExtents();
     }
 
     if (_firstNonPinnedCell == null &&
