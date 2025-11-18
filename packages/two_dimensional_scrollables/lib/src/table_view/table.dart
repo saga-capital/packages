@@ -2193,6 +2193,9 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
     }
 
     // Cells
+    // Optimize: Check if we have merged cells to avoid repeated HashMap lookups
+    final bool hasMergedCells = _mergedVicinities.isNotEmpty;
+
     for (
       int column = leadingVicinity.column;
       column <= trailingVicinity.column;
@@ -2206,8 +2209,9 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
         );
         if (cell == null) {
           // Covered by a merged cell
+          // Only perform expensive assertion in debug mode when we have merged cells
           assert(
-            _mergedVicinities.keys.contains(vicinity),
+            !hasMergedCells || _mergedVicinities.containsKey(vicinity),
             'TableViewCell for $vicinity could not be found. If merging '
             'cells, the same TableViewCell must be returned for every '
             'TableVicinity that is contained in the merged area of the '
