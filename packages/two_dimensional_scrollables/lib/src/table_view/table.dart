@@ -448,9 +448,9 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
     if (_firstNonPinnedRow == null || _firstNonPinnedColumn == null) {
       return null;
     }
-    return TableVicinity(
-      column: _firstNonPinnedColumn!,
-      row: _firstNonPinnedRow!,
+    return _getCachedVicinity(
+      _firstNonPinnedColumn!,
+      _firstNonPinnedRow!,
     );
   }
 
@@ -458,9 +458,9 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
     if (_lastNonPinnedRow == null || _lastNonPinnedColumn == null) {
       return null;
     }
-    return TableVicinity(
-      column: _lastNonPinnedColumn!,
-      row: _lastNonPinnedRow!,
+    return _getCachedVicinity(
+      _lastNonPinnedColumn!,
+      _lastNonPinnedRow!,
     );
   }
 
@@ -1653,10 +1653,10 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
           _paintCells(
             context: context,
             offset: offset,
-            leadingVicinity: TableVicinity(column: 0, row: _firstNonPinnedRow!),
-            trailingVicinity: TableVicinity(
-              column: _lastPinnedColumn!,
-              row: _lastNonPinnedRow!,
+            leadingVicinity: _getCachedVicinity(0, _firstNonPinnedRow!),
+            trailingVicinity: _getCachedVicinity(
+              _lastPinnedColumn!,
+              _lastNonPinnedRow!,
             ),
           );
         },
@@ -1688,13 +1688,13 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
           _paintCells(
             context: context,
             offset: offset,
-            leadingVicinity: TableVicinity(
-              column: _firstTrailingPinnedColumn!,
-              row: _firstNonPinnedRow!,
+            leadingVicinity: _getCachedVicinity(
+              _firstTrailingPinnedColumn!,
+              _firstNonPinnedRow!,
             ),
-            trailingVicinity: TableVicinity(
-              column: _lastTrailingPinnedColumn!,
-              row: _lastNonPinnedRow!,
+            trailingVicinity: _getCachedVicinity(
+              _lastTrailingPinnedColumn!,
+              _lastNonPinnedRow!,
             ),
           );
         },
@@ -1726,13 +1726,13 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
           _paintCells(
             context: context,
             offset: offset,
-            leadingVicinity: TableVicinity(
-              column: _firstNonPinnedColumn!,
-              row: 0,
+            leadingVicinity: _getCachedVicinity(
+              _firstNonPinnedColumn!,
+              0,
             ),
-            trailingVicinity: TableVicinity(
-              column: _lastNonPinnedColumn!,
-              row: _lastPinnedRow!,
+            trailingVicinity: _getCachedVicinity(
+              _lastNonPinnedColumn!,
+              _lastPinnedRow!,
             ),
           );
         },
@@ -1764,13 +1764,13 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
           _paintCells(
             context: context,
             offset: offset,
-            leadingVicinity: TableVicinity(
-              column: _firstNonPinnedColumn!,
-              row: _firstTrailingPinnedRow!,
+            leadingVicinity: _getCachedVicinity(
+              _firstNonPinnedColumn!,
+              _firstTrailingPinnedRow!,
             ),
-            trailingVicinity: TableVicinity(
-              column: _lastNonPinnedColumn!,
-              row: _lastTrailingPinnedRow!,
+            trailingVicinity: _getCachedVicinity(
+              _lastNonPinnedColumn!,
+              _lastTrailingPinnedRow!,
             ),
           );
         },
@@ -1787,9 +1787,9 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
         context: context,
         offset: offset,
         leadingVicinity: TableVicinity.zero,
-        trailingVicinity: TableVicinity(
-          column: _lastPinnedColumn!,
-          row: _lastPinnedRow!,
+        trailingVicinity: _getCachedVicinity(
+          _lastPinnedColumn!,
+          _lastPinnedRow!,
         ),
       );
     }
@@ -1799,13 +1799,13 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       _paintCells(
         context: context,
         offset: offset,
-        leadingVicinity: TableVicinity(
-          column: _firstTrailingPinnedColumn!,
-          row: 0,
+        leadingVicinity: _getCachedVicinity(
+          _firstTrailingPinnedColumn!,
+          0,
         ),
-        trailingVicinity: TableVicinity(
-          column: _lastTrailingPinnedColumn!,
-          row: _lastPinnedRow!,
+        trailingVicinity: _getCachedVicinity(
+          _lastTrailingPinnedColumn!,
+          _lastPinnedRow!,
         ),
       );
     }
@@ -1815,13 +1815,13 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       _paintCells(
         context: context,
         offset: offset,
-        leadingVicinity: TableVicinity(
-          column: 0,
-          row: _firstTrailingPinnedRow!,
+        leadingVicinity: _getCachedVicinity(
+          0,
+          _firstTrailingPinnedRow!,
         ),
-        trailingVicinity: TableVicinity(
-          column: _lastPinnedColumn!,
-          row: _lastTrailingPinnedRow!,
+        trailingVicinity: _getCachedVicinity(
+          _lastPinnedColumn!,
+          _lastTrailingPinnedRow!,
         ),
       );
     }
@@ -1831,13 +1831,13 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       _paintCells(
         context: context,
         offset: offset,
-        leadingVicinity: TableVicinity(
-          column: _firstTrailingPinnedColumn!,
-          row: _firstTrailingPinnedRow!,
+        leadingVicinity: _getCachedVicinity(
+          _firstTrailingPinnedColumn!,
+          _firstTrailingPinnedRow!,
         ),
-        trailingVicinity: TableVicinity(
-          column: _lastTrailingPinnedColumn!,
-          row: _lastTrailingPinnedRow!,
+        trailingVicinity: _getCachedVicinity(
+          _lastTrailingPinnedColumn!,
+          _lastTrailingPinnedRow!,
         ),
       );
     }
