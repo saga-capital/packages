@@ -378,6 +378,20 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
   bool _hasAnyColumnDecorations = false;
   bool _hasAnyRowDecorations = false;
 
+  // Cache TableVicinity instances to avoid allocating thousands per frame
+  // With 9 paint calls × 50 columns × 10 rows = 4500 allocations per frame
+  // Map key is encoded as: row * 10000 + column (assumes < 10000 columns)
+  final Map<int, TableVicinity> _vicinityCache = <int, TableVicinity>{};
+
+  // Get a cached TableVicinity instance, creating only if needed
+  TableVicinity _getCachedVicinity(int column, int row) {
+    final int key = row * 10000 + column;
+    return _vicinityCache.putIfAbsent(
+      key,
+      () => TableVicinity(column: column, row: row),
+    );
+  }
+
   int? _columnNullTerminatedIndex;
 
   bool get _columnsAreInfinite => delegate.columnCount == null;
@@ -1044,6 +1058,8 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
     _mergedVicinities.clear();
     _mergedRows.clear();
     _mergedColumns.clear();
+    // Clear vicinity cache to prevent unbounded growth and stale entries
+    _vicinityCache.clear();
 
     if (needsDelegateRebuild || didResize) {
       // Recomputes the table metrics, invalidates any cached information.
@@ -1927,11 +1943,11 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
           decorationCells.add((
             leading:
                 getChildFor(
-                  TableVicinity(column: column, row: leadingVicinity.row),
+                  _getCachedVicinity(column, leadingVicinity.row),
                 )!,
             trailing:
                 getChildFor(
-                  TableVicinity(column: column, row: trailingVicinity.row),
+                  _getCachedVicinity(column, trailingVicinity.row),
                 )!,
           ));
         } else {
@@ -1951,10 +1967,7 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
           late RenderBox trailingCell;
           int currentRow = leadingVicinity.row;
           while (currentRow <= trailingVicinity.row) {
-            TableVicinity vicinity = TableVicinity(
-              column: column,
-              row: currentRow,
-            );
+            TableVicinity vicinity = _getCachedVicinity(column, currentRow);
             leadingCell = getChildFor(vicinity)!;
             if (parentDataOf(leadingCell).columnMergeStart != null) {
               // Merged portion decorated individually since it exceeds the
@@ -1980,7 +1993,7 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
                 currentRow += 1;
               }
               trailingCell = nextCell;
-              vicinity = vicinity.copyWith(row: currentRow);
+              vicinity = _getCachedVicinity(column, currentRow);
               nextCell = getChildFor(
                 vicinity,
                 mapMergedVicinityToCanonicalChild: false,
@@ -2072,11 +2085,11 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
           decorationCells.add((
             leading:
                 getChildFor(
-                  TableVicinity(column: leadingVicinity.column, row: row),
+                  _getCachedVicinity(leadingVicinity.column, row),
                 )!, // leading
             trailing:
                 getChildFor(
-                  TableVicinity(column: trailingVicinity.column, row: row),
+                  _getCachedVicinity(trailingVicinity.column, row),
                 )!, // trailing
           ));
         } else {
@@ -2096,10 +2109,7 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
           late RenderBox trailingCell;
           int currentColumn = leadingVicinity.column;
           while (currentColumn <= trailingVicinity.column) {
-            TableVicinity vicinity = TableVicinity(
-              column: currentColumn,
-              row: row,
-            );
+            TableVicinity vicinity = _getCachedVicinity(currentColumn, row);
             leadingCell = getChildFor(vicinity)!;
             if (parentDataOf(leadingCell).rowMergeStart != null) {
               // Merged portion decorated individually since it exceeds the
@@ -2125,7 +2135,7 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
                 currentColumn += 1;
               }
               trailingCell = nextCell;
-              vicinity = vicinity.copyWith(column: currentColumn);
+              vicinity = _getCachedVicinity(currentColumn, row);
               nextCell = getChildFor(
                 vicinity,
                 mapMergedVicinityToCanonicalChild: false,
@@ -2252,7 +2262,8 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       column++
     ) {
       for (int row = leadingVicinity.row; row <= trailingVicinity.row; row++) {
-        final TableVicinity vicinity = TableVicinity(column: column, row: row);
+        // Use cached vicinity to avoid 4500+ allocations per frame
+        final TableVicinity vicinity = _getCachedVicinity(column, row);
         final RenderBox? cell = getChildFor(
           vicinity,
           mapMergedVicinityToCanonicalChild: false,
