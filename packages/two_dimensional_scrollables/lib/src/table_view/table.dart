@@ -373,6 +373,11 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
   double _cachedTrailingPinnedColumnsExtent = 0.0;
   double _cachedTrailingPinnedRowsExtent = 0.0;
 
+  // Cache whether any decorations exist to skip scanning in _paintCells
+  // _paintCells is called 9 times per frame, so this saves significant work
+  bool _hasAnyColumnDecorations = false;
+  bool _hasAnyRowDecorations = false;
+
   int? _columnNullTerminatedIndex;
 
   bool get _columnsAreInfinite => delegate.columnCount == null;
@@ -543,6 +548,31 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
           _rowMetrics[firstRow]!.leadingOffset;
     } else {
       _cachedTrailingPinnedRowsExtent = 0.0;
+    }
+  }
+
+  // Detect if any decorations exist in the entire table
+  // Called once during layout instead of 9 times during paint
+  void _detectDecorations() {
+    _hasAnyColumnDecorations = false;
+    _hasAnyRowDecorations = false;
+
+    // Scan all column metrics for decorations
+    for (final _Span columnMetric in _columnMetrics.values) {
+      if (columnMetric.configuration.backgroundDecoration != null ||
+          columnMetric.configuration.foregroundDecoration != null) {
+        _hasAnyColumnDecorations = true;
+        break;
+      }
+    }
+
+    // Scan all row metrics for decorations
+    for (final _Span rowMetric in _rowMetrics.values) {
+      if (rowMetric.configuration.backgroundDecoration != null ||
+          rowMetric.configuration.foregroundDecoration != null) {
+        _hasAnyRowDecorations = true;
+        break;
+      }
     }
   }
 
@@ -1030,11 +1060,15 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       _updateScrollBounds();
       // Update cached trailing pinned extents after metrics are computed
       _updateTrailingPinnedExtents();
+      // Detect decorations once per layout instead of 9 times per paint
+      _detectDecorations();
     } else {
       // Updates the visible cells based on cached table metrics.
       _updateFirstAndLastVisibleCell();
       // Update cached trailing pinned extents in case visible cells changed
       _updateTrailingPinnedExtents();
+      // Detect decorations once per layout instead of 9 times per paint
+      _detectDecorations();
     }
 
     if (_firstNonPinnedCell == null &&
@@ -1833,34 +1867,38 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
     required TableVicinity trailingVicinity,
     required Offset offset,
   }) {
-    // Early check: determine if we have any decorations to paint.
-    // This avoids expensive allocation and iteration when decorations aren't used.
+    // Use cached decoration flags - this method is called 9 times per paint!
+    // Scanning would happen 18 times per frame (2 scans × 9 calls) otherwise.
+    // With caching, we scan once during layout instead.
     bool hasColumnDecorations = false;
     bool hasRowDecorations = false;
 
-    // Quick scan for column decorations
-    for (
-      int column = leadingVicinity.column;
-      column <= trailingVicinity.column && !hasColumnDecorations;
-      column++
-    ) {
-      final TableSpan columnSpan = _columnMetrics[column]!.configuration;
-      if (columnSpan.backgroundDecoration != null ||
-          columnSpan.foregroundDecoration != null) {
-        hasColumnDecorations = true;
+    // Only scan this region if global decorations exist
+    if (_hasAnyColumnDecorations) {
+      for (
+        int column = leadingVicinity.column;
+        column <= trailingVicinity.column && !hasColumnDecorations;
+        column++
+      ) {
+        final TableSpan columnSpan = _columnMetrics[column]!.configuration;
+        if (columnSpan.backgroundDecoration != null ||
+            columnSpan.foregroundDecoration != null) {
+          hasColumnDecorations = true;
+        }
       }
     }
 
-    // Quick scan for row decorations
-    for (
-      int row = leadingVicinity.row;
-      row <= trailingVicinity.row && !hasRowDecorations;
-      row++
-    ) {
-      final TableSpan rowSpan = _rowMetrics[row]!.configuration;
-      if (rowSpan.backgroundDecoration != null ||
-          rowSpan.foregroundDecoration != null) {
-        hasRowDecorations = true;
+    if (_hasAnyRowDecorations) {
+      for (
+        int row = leadingVicinity.row;
+        row <= trailingVicinity.row && !hasRowDecorations;
+        row++
+      ) {
+        final TableSpan rowSpan = _rowMetrics[row]!.configuration;
+        if (rowSpan.backgroundDecoration != null ||
+            rowSpan.foregroundDecoration != null) {
+          hasRowDecorations = true;
+        }
       }
     }
 
