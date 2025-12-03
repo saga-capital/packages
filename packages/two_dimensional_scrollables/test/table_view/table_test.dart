@@ -3378,8 +3378,8 @@ void main() {
               foregroundDecoration: TableSpanDecoration(
                 consumeSpanPadding: false,
                 borderRadius: BorderRadius.circular(10.0),
-                border: const TableSpanBorder(
-                  trailing: BorderSide(color: Colors.orange, width: 3),
+                border: TableSpanBorder(
+                  trailing: const BorderSide(color: Colors.orange, width: 3),
                 ),
               ),
               backgroundDecoration: TableSpanDecoration(
@@ -3395,8 +3395,8 @@ void main() {
               foregroundDecoration: TableSpanDecoration(
                 // consumePadding true by default
                 borderRadius: BorderRadius.circular(30.0),
-                border: const TableSpanBorder(
-                  leading: BorderSide(color: Colors.green, width: 3),
+                border: TableSpanBorder(
+                  leading: const BorderSide(color: Colors.green, width: 3),
                 ),
               ),
               backgroundDecoration: TableSpanDecoration(
@@ -3539,9 +3539,9 @@ void main() {
         columnBuilder:
             (int index) => TableSpan(
               extent: const FixedTableSpanExtent(200.0),
-              foregroundDecoration: const TableSpanDecoration(
+              foregroundDecoration: TableSpanDecoration(
                 border: TableSpanBorder(
-                  trailing: BorderSide(color: Colors.orange, width: 3),
+                  trailing: const BorderSide(color: Colors.orange, width: 3),
                 ),
               ),
               backgroundDecoration: TableSpanDecoration(
@@ -3551,9 +3551,9 @@ void main() {
         rowBuilder:
             (int index) => TableSpan(
               extent: const FixedTableSpanExtent(200.0),
-              foregroundDecoration: const TableSpanDecoration(
+              foregroundDecoration: TableSpanDecoration(
                 border: TableSpanBorder(
-                  leading: BorderSide(color: Colors.green, width: 3),
+                  leading: const BorderSide(color: Colors.green, width: 3),
                 ),
               ),
               backgroundDecoration: TableSpanDecoration(
