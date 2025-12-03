@@ -75,7 +75,10 @@ typedef TreeRowDecoration = SpanDecoration;
 /// Describes the border for a [TreeRow].
 class TreeRowBorder extends SpanBorder {
   /// Creates a [TreeRowBorder].
-  const TreeRowBorder({
+  ///
+  /// Note: This constructor is not const because [SpanBorder] caches Border
+  /// objects internally for performance optimization.
+  TreeRowBorder({
     BorderSide top = BorderSide.none,
     BorderSide bottom = BorderSide.none,
     this.left = BorderSide.none,
@@ -84,7 +87,10 @@ class TreeRowBorder extends SpanBorder {
 
   /// Creates a [TreeRowBorder] with the provided [BorderSide] applied to all
   /// sides.
-  const TreeRowBorder.all(BorderSide side)
+  ///
+  /// Note: This constructor is not const because [SpanBorder] caches Border
+  /// objects internally for performance optimization.
+  TreeRowBorder.all(BorderSide side)
     : left = side,
       right = side,
       super(leading: side, trailing: side);

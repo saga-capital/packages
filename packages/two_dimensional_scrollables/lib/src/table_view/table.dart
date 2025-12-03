@@ -4,6 +4,7 @@
 
 import 'dart:collection';
 import 'dart:math' as math;
+import 'dart:ui' show Canvas, PictureRecorder;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -391,6 +392,16 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       () => TableVicinity(column: column, row: row),
     );
   }
+
+  // Object pooling optimization: Reuse TableSpanDecorationPaintDetails instance
+  // to avoid allocating hundreds per frame (one for each decoration × 9 paint passes).
+  // Safe because it's only used synchronously during _paintCells and updated before each use.
+  late final TableSpanDecorationPaintDetails _reusablePaintDetails =
+      TableSpanDecorationPaintDetails(
+        canvas: Canvas(PictureRecorder()),  // Dummy initial values
+        rect: Rect.zero,
+        axisDirection: AxisDirection.down,
+      );
 
   int? _columnNullTerminatedIndex;
 
@@ -1058,10 +1069,12 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
     _mergedVicinities.clear();
     _mergedRows.clear();
     _mergedColumns.clear();
-    // Clear vicinity cache to prevent unbounded growth and stale entries
-    _vicinityCache.clear();
 
     if (needsDelegateRebuild || didResize) {
+      // Clear vicinity cache only when delegate changes - otherwise reuse across frames
+      // This preserves the cache's purpose: avoiding 4500 allocations per frame
+      // (9 paint passes × 50 columns × 10 rows = 4500 TableVicinity objects)
+      _vicinityCache.clear();
       // Recomputes the table metrics, invalidates any cached information.
       for (final _Span span in _columnMetrics.values) {
         span.dispose();
@@ -2212,42 +2225,39 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       // Default, row major order. Rows go first.
       case Axis.vertical:
         backgroundRows?.forEach((Rect rect, TableSpanDecoration decoration) {
-          final TableSpanDecorationPaintDetails paintingDetails =
-              TableSpanDecorationPaintDetails(
-                canvas: context.canvas,
-                rect: rect,
-                axisDirection: horizontalAxisDirection,
-              );
-          decoration.paint(paintingDetails);
+          // Reuse pooled instance instead of allocating new object
+          _reusablePaintDetails.updateWith(
+            canvas: context.canvas,
+            rect: rect,
+            axisDirection: horizontalAxisDirection,
+          );
+          decoration.paint(_reusablePaintDetails);
         });
         backgroundColumns?.forEach((Rect rect, TableSpanDecoration decoration) {
-          final TableSpanDecorationPaintDetails paintingDetails =
-              TableSpanDecorationPaintDetails(
-                canvas: context.canvas,
-                rect: rect,
-                axisDirection: verticalAxisDirection,
-              );
-          decoration.paint(paintingDetails);
+          _reusablePaintDetails.updateWith(
+            canvas: context.canvas,
+            rect: rect,
+            axisDirection: verticalAxisDirection,
+          );
+          decoration.paint(_reusablePaintDetails);
         });
       // Column major order. Columns go first.
       case Axis.horizontal:
         backgroundColumns?.forEach((Rect rect, TableSpanDecoration decoration) {
-          final TableSpanDecorationPaintDetails paintingDetails =
-              TableSpanDecorationPaintDetails(
-                canvas: context.canvas,
-                rect: rect,
-                axisDirection: verticalAxisDirection,
-              );
-          decoration.paint(paintingDetails);
+          _reusablePaintDetails.updateWith(
+            canvas: context.canvas,
+            rect: rect,
+            axisDirection: verticalAxisDirection,
+          );
+          decoration.paint(_reusablePaintDetails);
         });
         backgroundRows?.forEach((Rect rect, TableSpanDecoration decoration) {
-          final TableSpanDecorationPaintDetails paintingDetails =
-              TableSpanDecorationPaintDetails(
-                canvas: context.canvas,
-                rect: rect,
-                axisDirection: horizontalAxisDirection,
-              );
-          decoration.paint(paintingDetails);
+          _reusablePaintDetails.updateWith(
+            canvas: context.canvas,
+            rect: rect,
+            axisDirection: horizontalAxisDirection,
+          );
+          decoration.paint(_reusablePaintDetails);
         });
     }
 
@@ -2291,42 +2301,39 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       // Default, row major order. Rows go first.
       case Axis.vertical:
         foregroundRows?.forEach((Rect rect, TableSpanDecoration decoration) {
-          final TableSpanDecorationPaintDetails paintingDetails =
-              TableSpanDecorationPaintDetails(
-                canvas: context.canvas,
-                rect: rect,
-                axisDirection: horizontalAxisDirection,
-              );
-          decoration.paint(paintingDetails);
+          // Reuse pooled instance instead of allocating new object
+          _reusablePaintDetails.updateWith(
+            canvas: context.canvas,
+            rect: rect,
+            axisDirection: horizontalAxisDirection,
+          );
+          decoration.paint(_reusablePaintDetails);
         });
         foregroundColumns?.forEach((Rect rect, TableSpanDecoration decoration) {
-          final TableSpanDecorationPaintDetails paintingDetails =
-              TableSpanDecorationPaintDetails(
-                canvas: context.canvas,
-                rect: rect,
-                axisDirection: verticalAxisDirection,
-              );
-          decoration.paint(paintingDetails);
+          _reusablePaintDetails.updateWith(
+            canvas: context.canvas,
+            rect: rect,
+            axisDirection: verticalAxisDirection,
+          );
+          decoration.paint(_reusablePaintDetails);
         });
       // Column major order. Columns go first.
       case Axis.horizontal:
         foregroundColumns?.forEach((Rect rect, TableSpanDecoration decoration) {
-          final TableSpanDecorationPaintDetails paintingDetails =
-              TableSpanDecorationPaintDetails(
-                canvas: context.canvas,
-                rect: rect,
-                axisDirection: verticalAxisDirection,
-              );
-          decoration.paint(paintingDetails);
+          _reusablePaintDetails.updateWith(
+            canvas: context.canvas,
+            rect: rect,
+            axisDirection: verticalAxisDirection,
+          );
+          decoration.paint(_reusablePaintDetails);
         });
         foregroundRows?.forEach((Rect rect, TableSpanDecoration decoration) {
-          final TableSpanDecorationPaintDetails paintingDetails =
-              TableSpanDecorationPaintDetails(
-                canvas: context.canvas,
-                rect: rect,
-                axisDirection: horizontalAxisDirection,
-              );
-          decoration.paint(paintingDetails);
+          _reusablePaintDetails.updateWith(
+            canvas: context.canvas,
+            rect: rect,
+            axisDirection: horizontalAxisDirection,
+          );
+          decoration.paint(_reusablePaintDetails);
         });
     }
   }

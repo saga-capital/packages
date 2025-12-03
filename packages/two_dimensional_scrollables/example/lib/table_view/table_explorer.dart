@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 
+import 'debug_optimized_table.dart';
 import 'infinite_table.dart';
 import 'merged_table.dart';
 import 'pinned_table.dart';
@@ -33,6 +34,9 @@ enum TableType {
 
   /// Displays PinnedTableExample.
   pinned,
+
+  /// Displays DebugOptimizedTableExample.
+  debugOptimized,
 }
 
 class _TableExplorerState extends State<TableExplorer> {
@@ -44,6 +48,7 @@ class _TableExplorerState extends State<TableExplorer> {
       TableType.merged => 'Merged cells in TableView',
       TableType.infinite => 'Infinite TableView',
       TableType.pinned => 'Pinned rows & columns',
+      TableType.debugOptimized => 'Debug-Optimized TableView',
     };
   }
 
@@ -53,6 +58,7 @@ class _TableExplorerState extends State<TableExplorer> {
       TableType.merged => const MergedTableExample(),
       TableType.infinite => const InfiniteTableExample(),
       TableType.pinned => const PinnedTableExample(),
+      TableType.debugOptimized => const DebugOptimizedTableExample(),
     };
   }
 
@@ -83,6 +89,9 @@ class _TableExplorerState extends State<TableExplorer> {
                 _spacer,
                 const Radio<TableType>(value: TableType.pinned),
                 const Text('Pinned'),
+                _spacer,
+                const Radio<TableType>(value: TableType.debugOptimized),
+                const Text('Debug-Opt'),
               ],
             ),
           ),

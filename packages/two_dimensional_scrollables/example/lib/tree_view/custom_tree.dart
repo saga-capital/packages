@@ -199,8 +199,8 @@ class CustomTreeExampleState extends State<CustomTreeExample> {
                   backgroundDecoration: TreeRowDecoration(
                     color: Colors.amber[100],
                   ),
-                  foregroundDecoration: const TreeRowDecoration(
-                    border: TreeRowBorder.all(BorderSide()),
+                  foregroundDecoration:  TreeRowDecoration(
+                    border: TreeRowBorder.all(const BorderSide()),
                   ),
                 );
               }

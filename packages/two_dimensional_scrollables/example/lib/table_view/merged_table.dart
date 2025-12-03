@@ -123,9 +123,9 @@ class _MergedTableExampleState extends State<MergedTableExample> {
       extent: FixedTableSpanExtent(index == 0 ? 220 : 180),
       foregroundDecoration:
           index == 0
-              ? const TableSpanDecoration(
+              ? TableSpanDecoration(
                 border: TableSpanBorder(
-                  trailing: BorderSide(width: 5, color: Colors.white),
+                  trailing: const BorderSide(width: 5, color: Colors.white),
                 ),
               )
               : null,

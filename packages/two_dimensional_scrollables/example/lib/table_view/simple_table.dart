@@ -144,8 +144,8 @@ class _TableExampleState extends State<TableExample> {
   }
 
   TableSpan _buildColumnSpan(int index) {
-    const TableSpanDecoration decoration = TableSpanDecoration(
-      border: TableSpanBorder(trailing: BorderSide()),
+     final TableSpanDecoration decoration = TableSpanDecoration(
+      border: TableSpanBorder(trailing: const BorderSide()),
     );
 
     switch (index % 5) {
@@ -198,7 +198,7 @@ class _TableExampleState extends State<TableExample> {
   TableSpan _buildRowSpan(int index) {
     final TableSpanDecoration decoration = TableSpanDecoration(
       color: index.isEven ? Colors.purple[100] : null,
-      border: const TableSpanBorder(trailing: BorderSide(width: 3)),
+      border:  TableSpanBorder(trailing: const BorderSide(width: 3)),
     );
 
     switch (index % 3) {

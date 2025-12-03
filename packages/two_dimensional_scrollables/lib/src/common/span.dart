@@ -383,10 +383,9 @@ class SpanDecoration {
   /// cells.
   void paint(SpanDecorationPaintDetails details) {
     if (color != null) {
-      final Paint paint =
-          Paint()
-            ..color = color!
-            ..isAntiAlias = borderRadius != null;
+      final Paint paint = Paint()
+        ..color = color!
+        ..isAntiAlias = borderRadius != null;
       if (borderRadius == null || borderRadius == BorderRadius.zero) {
         details.canvas.drawRect(details.rect, paint);
       } else {
@@ -402,7 +401,10 @@ class SpanDecoration {
 /// Describes the border for a [Span].
 class SpanBorder {
   /// Creates a [SpanBorder].
-  const SpanBorder({
+  ///
+  /// Note: This constructor is not const to support object pooling optimization.
+  /// Border instances are cached internally to reduce allocations during painting.
+  SpanBorder({
     this.trailing = BorderSide.none,
     this.leading = BorderSide.none,
   });
@@ -421,6 +423,14 @@ class SpanBorder {
   /// [AxisDirection.down], the leading side of a column
   /// is its left side when the [Axis.horizontal] is [AxisDirection.right].
   final BorderSide leading;
+
+  // Object pooling optimization: Cache Border instances to reduce allocations.
+  // These are lazily initialized on first use and reused for subsequent paints.
+  // Safe because Border instances are immutable once created.
+  Border? _cachedHorizontalRightBorder;
+  Border? _cachedHorizontalLeftBorder;
+  Border? _cachedVerticalDownBorder;
+  Border? _cachedVerticalUpBorder;
 
   /// Called to draw the border around a span.
   ///
@@ -442,16 +452,15 @@ class SpanBorder {
     final AxisDirection axisDirection = details.axisDirection;
     switch (axisDirectionToAxis(axisDirection)) {
       case Axis.horizontal:
-        final Border border = Border(
-          top: axisDirection == AxisDirection.right ? leading : trailing,
-          bottom: axisDirection == AxisDirection.right ? trailing : leading,
-        );
+        // Lazily initialize and reuse cached Border instances
+        final Border border = axisDirection == AxisDirection.right
+            ? (_cachedHorizontalRightBorder ??= Border(top: leading, bottom: trailing))
+            : (_cachedHorizontalLeftBorder ??= Border(top: trailing, bottom: leading));
         border.paint(details.canvas, details.rect, borderRadius: borderRadius);
       case Axis.vertical:
-        final Border border = Border(
-          left: axisDirection == AxisDirection.down ? leading : trailing,
-          right: axisDirection == AxisDirection.down ? trailing : leading,
-        );
+        final Border border = axisDirection == AxisDirection.down
+            ? (_cachedVerticalDownBorder ??= Border(left: leading, right: trailing))
+            : (_cachedVerticalUpBorder ??= Border(left: trailing, right: leading));
         border.paint(details.canvas, details.rect, borderRadius: borderRadius);
     }
   }
@@ -461,25 +470,40 @@ class SpanBorder {
 ///
 /// Created during paint by the [RenderTableViewport] for the
 /// [Span.foregroundDecoration] and [Span.backgroundDecoration].
+///
+/// ## Performance Optimization
+///
+/// This class was made mutable to support object pooling. Instead of allocating
+/// hundreds of instances per frame (one for each decoration × 9 paint passes),
+/// a single instance can be reused by calling [updateWith] between uses.
+///
+/// This is safe because instances are only used synchronously during painting
+/// and are not retained by Canvas or decoration implementations.
 class SpanDecorationPaintDetails {
   /// Creates the details needed to paint a [SpanDecoration].
   ///
   /// The [canvas], [rect], and [axisDirection] must be provided.
   SpanDecorationPaintDetails({
-    required this.canvas,
-    required this.rect,
-    required this.axisDirection,
-  });
+    required Canvas canvas,
+    required Rect rect,
+    required AxisDirection axisDirection,
+  }) : _canvas = canvas,
+       _rect = rect,
+       _axisDirection = axisDirection;
+
+  Canvas _canvas;
+  Rect _rect;
+  AxisDirection _axisDirection;
 
   /// The [Canvas] that the [SpanDecoration] will be painted to.
-  final Canvas canvas;
+  Canvas get canvas => _canvas;
 
   /// A [Rect] representing the visible area of a row or column in the
   /// [TableView], as represented by a [Span].
   ///
   /// This Rect contains all of the visible children in a given row or column,
   /// which is the area the [SpanDecoration] will be applied to.
-  final Rect rect;
+  Rect get rect => _rect;
 
   /// The [AxisDirection] of the [Axis] of the [Span].
   ///
@@ -487,5 +511,20 @@ class SpanDecorationPaintDetails {
   /// [Axis.vertical], a column is being painted. When [AxisDirection.left] or
   /// [AxisDirection.right], which would be [Axis.horizontal], a row is being
   /// painted.
-  final AxisDirection axisDirection;
+  AxisDirection get axisDirection => _axisDirection;
+
+  /// Updates this instance with new values for reuse.
+  ///
+  /// This method supports object pooling to reduce allocations during painting.
+  /// Call this method to update the internal state before passing the instance
+  /// to [SpanDecoration.paint].
+  void updateWith({
+    required Canvas canvas,
+    required Rect rect,
+    required AxisDirection axisDirection,
+  }) {
+    _canvas = canvas;
+    _rect = rect;
+    _axisDirection = axisDirection;
+  }
 }
