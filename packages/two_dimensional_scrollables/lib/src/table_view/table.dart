@@ -639,7 +639,55 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
         continue;
       }
       final Rect cellRect = cellParentData.paintOffset! & cell.size;
-      if (cellRect.contains(position)) {
+
+      // Apply clipping to match paint behavior: non-pinned cells are clipped
+      // to the scrollable viewport area during paint, so their hit test rect
+      // must be similarly clipped. Without this, scrollable cells that extend
+      // behind pinned regions would intercept pointer events meant for the
+      // pinned cells rendered on top.
+      final int column = cellParentData.tableVicinity.column;
+      final int row = cellParentData.tableVicinity.row;
+
+      final bool isLeadingPinnedColumn =
+          _lastPinnedColumn != null && column <= _lastPinnedColumn!;
+      final bool isTrailingPinnedColumn = _isTrailingPinnedColumn(column);
+      final bool isLeadingPinnedRow =
+          _lastPinnedRow != null && row <= _lastPinnedRow!;
+      final bool isTrailingPinnedRow = _isTrailingPinnedRow(row);
+
+      double clipLeft = cellRect.left;
+      double clipRight = cellRect.right;
+      double clipTop = cellRect.top;
+      double clipBottom = cellRect.bottom;
+
+      if (!isLeadingPinnedColumn && !isTrailingPinnedColumn) {
+        // Scrollable column: clip horizontally to exclude pinned column areas.
+        clipLeft = math.max(clipLeft, _pinnedColumnsExtent);
+        clipRight = math.min(
+          clipRight,
+          viewportDimension.width - _trailingPinnedColumnsExtent,
+        );
+      }
+
+      if (!isLeadingPinnedRow && !isTrailingPinnedRow) {
+        // Scrollable row: clip vertically to exclude pinned row areas.
+        clipTop = math.max(clipTop, _pinnedRowsExtent);
+        clipBottom = math.min(
+          clipBottom,
+          viewportDimension.height - _trailingPinnedRowsExtent,
+        );
+      }
+
+      if (clipRight <= clipLeft || clipBottom <= clipTop) {
+        // Clipped rect is empty, skip this cell.
+        cell = childAfter(cell);
+        continue;
+      }
+
+      final Rect clippedRect =
+          Rect.fromLTRB(clipLeft, clipTop, clipRight, clipBottom);
+
+      if (clippedRect.contains(position)) {
         result.addWithPaintOffset(
           offset: cellParentData.paintOffset,
           position: position,
