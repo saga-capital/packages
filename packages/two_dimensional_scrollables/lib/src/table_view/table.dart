@@ -1157,9 +1157,10 @@ class RenderTableViewport extends RenderTwoDimensionalViewport {
       _rowMetrics.clear();
       _updateColumnMetrics();
       _updateRowMetrics();
-      _updateScrollBounds();
-      // Update cached trailing pinned extents after metrics are computed
+      // Update cached trailing pinned extents before scroll bounds so
+      // _updateScrollBounds uses the correct trailing pinned widths.
       _updateTrailingPinnedExtents();
+      _updateScrollBounds();
       // Detect decorations once per layout instead of 9 times per paint
       _detectDecorations();
     } else {
