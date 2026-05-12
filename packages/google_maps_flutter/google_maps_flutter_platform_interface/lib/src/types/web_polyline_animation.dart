@@ -39,6 +39,8 @@ class WebPolylineAnimation {
     this.direction = WebFlowDirection.forward,
     this.color,
     this.size = 4,
+    this.customSvgPath,
+    this.rotation,
   });
 
   /// Which preset symbol to repeat along the path.
@@ -61,6 +63,16 @@ class WebPolylineAnimation {
   /// Symbol scale (passed through to google.maps Symbol.scale).
   final double size;
 
+  /// Custom SVG path for the flowing symbol. When set, overrides [symbol].
+  /// Coordinates are typically in the [-1, 1] range; google.maps applies
+  /// [size] as the scale factor. Example: `'M -1 0 L 0 -1 L 1 0 L 0 1 Z'`
+  /// for a diamond.
+  final String? customSvgPath;
+
+  /// Initial rotation in degrees applied to the symbol. The polyline tangent
+  /// rotation is still added on top per icon position.
+  final double? rotation;
+
   @override
   bool operator ==(Object other) =>
       other is WebPolylineAnimation &&
@@ -69,7 +81,9 @@ class WebPolylineAnimation {
       other.speedPercentPerSecond == speedPercentPerSecond &&
       other.direction == direction &&
       other.color == color &&
-      other.size == size;
+      other.size == size &&
+      other.customSvgPath == customSvgPath &&
+      other.rotation == rotation;
 
   @override
   int get hashCode => Object.hash(
@@ -79,5 +93,7 @@ class WebPolylineAnimation {
         direction,
         color,
         size,
+        customSvgPath,
+        rotation,
       );
 }

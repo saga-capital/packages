@@ -14,6 +14,7 @@ import 'animate_camera.dart';
 import 'clustering.dart';
 import 'collision_behavior.dart';
 import 'fork_marker_features.dart';
+import 'fork_polyline_animation.dart';
 import 'ground_overlay.dart';
 import 'heatmap.dart';
 import 'lite_mode.dart';
@@ -63,6 +64,7 @@ final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
   const HeatmapPage(),
   const AdvancedMarkerCollisionBehaviorPage(mapId: _mapId),
   const ForkMarkerFeaturesPage(mapId: _mapId),
+  const ForkPolylineAnimationPage(),
 ];
 
 /// MapsDemo is the Main Application.

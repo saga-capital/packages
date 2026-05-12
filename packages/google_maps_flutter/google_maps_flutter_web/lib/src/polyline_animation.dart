@@ -137,6 +137,19 @@ gmaps.Symbol _symbolForFlow(
   final Color color = animation.color ?? polylineColor;
   final String cssColor = _getCssColor(color);
 
+  final String? custom = animation.customSvgPath;
+  if (custom != null && custom.isNotEmpty) {
+    return gmaps.Symbol(
+      path: custom.toJS,
+      scale: animation.size,
+      fillColor: cssColor,
+      fillOpacity: 1,
+      strokeColor: cssColor,
+      strokeWeight: 2,
+      rotation: animation.rotation,
+    );
+  }
+
   switch (animation.symbol) {
     case WebFlowSymbol.arrow:
       return gmaps.Symbol(
