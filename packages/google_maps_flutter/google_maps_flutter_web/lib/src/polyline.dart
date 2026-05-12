@@ -14,7 +14,8 @@ class PolylineController {
     LatLngCallback? onMouseOver,
     LatLngCallback? onMouseOut,
   }) : _polyline = polyline,
-       _consumeTapEvents = consumeTapEvents {
+       _consumeTapEvents = consumeTapEvents,
+       _animationHandle = 0 {
     if (onTap != null) {
       polyline.onClick.listen((gmaps.PolyMouseEvent event) {
         onTap.call();
@@ -36,6 +37,26 @@ class PolylineController {
 
   final bool _consumeTapEvents;
 
+  int _animationHandle;
+
+  /// Registers (or replaces) a flowing-symbol animation for this polyline.
+  /// Pass null to clear.
+  void setAnimation(WebPolylineAnimation? animation, Color polylineColor) {
+    if (_animationHandle != 0) {
+      _PolylineAnimationManager.instance.unregister(_animationHandle);
+      _animationHandle = 0;
+    }
+    final poly = _polyline;
+    if (animation == null || poly == null) {
+      return;
+    }
+    _animationHandle = _PolylineAnimationManager.instance.register(
+      poly,
+      animation,
+      polylineColor,
+    );
+  }
+
   /// Returns the wrapped [gmaps.Polyline]. Only used for testing.
   @visibleForTesting
   gmaps.Polyline? get line => _polyline;
@@ -56,6 +77,10 @@ class PolylineController {
 
   /// Disposes of the currently wrapped [gmaps.Polyline].
   void remove() {
+    if (_animationHandle != 0) {
+      _PolylineAnimationManager.instance.unregister(_animationHandle);
+      _animationHandle = 0;
+    }
     if (_polyline != null) {
       _polyline!.visible = false;
       _polyline!.map = null;

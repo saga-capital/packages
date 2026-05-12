@@ -46,4 +46,5 @@ part 'src/overlays.dart';
 part 'src/polygon.dart';
 part 'src/polygons.dart';
 part 'src/polyline.dart';
+part 'src/polyline_animation.dart';
 part 'src/polylines.dart';

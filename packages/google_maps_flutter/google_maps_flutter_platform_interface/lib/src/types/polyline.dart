@@ -39,6 +39,7 @@ class Polyline implements MapsObject<Polyline> {
     this.onTap,
     this.onMouseOver,
     this.onMouseOut,
+    this.webAnimation,
   });
 
   /// Uniquely identifies a [Polyline].
@@ -123,6 +124,10 @@ class Polyline implements MapsObject<Polyline> {
   /// Callback to receive mouse out events for polyline placed on this map.
   final ValueChanged<LatLng>? onMouseOut;
 
+  /// Web-only flowing-symbol animation rendered along the polyline path
+  /// via google.maps IconSequence. Mobile ignores this field.
+  final WebPolylineAnimation? webAnimation;
+
   /// Creates a new [Polyline] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
   Polyline copyWith({
@@ -140,6 +145,7 @@ class Polyline implements MapsObject<Polyline> {
     VoidCallback? onTapParam,
     ValueChanged<LatLng>? onMouseOverParam,
     ValueChanged<LatLng>? onMouseOutParam,
+    WebPolylineAnimation? webAnimationParam,
   }) {
     return Polyline(
       polylineId: polylineId,
@@ -157,6 +163,7 @@ class Polyline implements MapsObject<Polyline> {
       zIndex: zIndexParam ?? zIndex,
       onMouseOver: onMouseOverParam ?? onMouseOver,
       onMouseOut: onMouseOutParam ?? onMouseOut,
+      webAnimation: webAnimationParam ?? webAnimation,
     );
   }
 
@@ -219,7 +226,8 @@ class Polyline implements MapsObject<Polyline> {
         endCap == other.endCap &&
         visible == other.visible &&
         width == other.width &&
-        zIndex == other.zIndex;
+        zIndex == other.zIndex &&
+        webAnimation == other.webAnimation;
   }
 
   @override

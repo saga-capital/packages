@@ -49,3 +49,4 @@ export 'utils/tile_overlay.dart';
 export 'web_camera_control_position.dart';
 export 'web_gesture_handling.dart';
 export 'web_marker_overlay.dart';
+export 'web_polyline_animation.dart';

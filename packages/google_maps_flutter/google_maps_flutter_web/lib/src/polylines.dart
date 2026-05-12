@@ -47,6 +47,7 @@ class PolylinesController extends GeometryController {
         _onPolylineMouseOut(polyline.polylineId, latLng);
       },
     );
+    controller.setAnimation(polyline.webAnimation, polyline.color);
     _polylineIdToController[polyline.polylineId] = controller;
   }
 
@@ -61,6 +62,7 @@ class PolylinesController extends GeometryController {
     polylineController?.update(
       _polylineOptionsFromPolyline(googleMap, polyline),
     );
+    polylineController?.setAnimation(polyline.webAnimation, polyline.color);
   }
 
   /// Removes a set of [PolylineId]s from the cache.
