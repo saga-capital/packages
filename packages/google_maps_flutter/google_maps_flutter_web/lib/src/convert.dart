@@ -623,6 +623,121 @@ Future<web.Node?> _advancedMarkerIconFromBytes(
   return icon;
 }
 
+/// Wraps an [AdvancedMarker] icon node with a [WebMarkerOverlay] DOM tree
+/// when configured. Returns the icon node directly when no overlay is set.
+web.Node? _buildAdvancedMarkerContent(
+  AdvancedMarker marker,
+  web.Node? iconNode,
+) {
+  final WebMarkerOverlay? overlay = marker.webOverlay;
+  if (overlay == null) {
+    return iconNode;
+  }
+
+  final wrapper = web.document.createElement('div') as web.HTMLDivElement
+    ..style.position = 'relative'
+    ..style.display = 'inline-block';
+  if (overlay.className != null && overlay.className!.isNotEmpty) {
+    wrapper.className = overlay.className!;
+  }
+  if (iconNode != null) {
+    wrapper.appendChild(iconNode);
+  }
+
+  final WebMarkerLabel? label = overlay.label;
+  if (label != null && label.text.isNotEmpty) {
+    final labelEl = web.document.createElement('span') as web.HTMLSpanElement
+      ..textContent = label.text
+      ..style.position = 'absolute'
+      ..style.pointerEvents = 'none'
+      ..style.whiteSpace = 'nowrap';
+    _applyAnchorStyle(labelEl, label.anchor);
+    if (label.className != null && label.className!.isNotEmpty) {
+      labelEl.className = label.className!;
+    } else {
+      if (label.color != null) {
+        labelEl.style.color = _getCssColor(label.color!);
+      }
+      if (label.fontSize != null) {
+        labelEl.style.fontSize = label.fontSize!;
+      }
+      if (label.fontFamily != null) {
+        labelEl.style.fontFamily = label.fontFamily!;
+      }
+      if (label.fontWeight != null) {
+        labelEl.style.fontWeight = label.fontWeight!;
+      }
+    }
+    wrapper.appendChild(labelEl);
+  }
+
+  final WebMarkerBadge? badge = overlay.badge;
+  if (badge != null) {
+    final badgeEl = web.document.createElement('span') as web.HTMLSpanElement
+      ..style.position = 'absolute'
+      ..style.pointerEvents = 'none';
+    final String? badgeText = badge.text;
+    if (badgeText != null) {
+      badgeEl.textContent = badgeText;
+    }
+    _applyBadgeAnchorStyle(badgeEl, badge.anchor);
+    if (badge.className != null && badge.className!.isNotEmpty) {
+      badgeEl.className = badge.className!;
+    } else if (badge.color != null) {
+      badgeEl.style.backgroundColor = _getCssColor(badge.color!);
+    }
+    wrapper.appendChild(badgeEl);
+  }
+
+  return wrapper;
+}
+
+void _applyAnchorStyle(web.HTMLElement el, WebLabelAnchor anchor) {
+  switch (anchor) {
+    case WebLabelAnchor.center:
+      el.style.left = '50%';
+      el.style.top = '50%';
+      el.style.transform = 'translate(-50%, -50%)';
+    case WebLabelAnchor.top:
+      el.style.left = '50%';
+      el.style.top = '0';
+      el.style.transform = 'translate(-50%, -100%)';
+    case WebLabelAnchor.bottom:
+      el.style.left = '50%';
+      el.style.bottom = '0';
+      el.style.transform = 'translate(-50%, 100%)';
+    case WebLabelAnchor.left:
+      el.style.left = '0';
+      el.style.top = '50%';
+      el.style.transform = 'translate(-100%, -50%)';
+    case WebLabelAnchor.right:
+      el.style.right = '0';
+      el.style.top = '50%';
+      el.style.transform = 'translate(100%, -50%)';
+  }
+}
+
+void _applyBadgeAnchorStyle(web.HTMLElement el, WebBadgeAnchor anchor) {
+  switch (anchor) {
+    case WebBadgeAnchor.topLeft:
+      el.style.left = '0';
+      el.style.top = '0';
+      el.style.transform = 'translate(-50%, -50%)';
+    case WebBadgeAnchor.topRight:
+      el.style.right = '0';
+      el.style.top = '0';
+      el.style.transform = 'translate(50%, -50%)';
+    case WebBadgeAnchor.bottomLeft:
+      el.style.left = '0';
+      el.style.bottom = '0';
+      el.style.transform = 'translate(-50%, 50%)';
+    case WebBadgeAnchor.bottomRight:
+      el.style.right = '0';
+      el.style.bottom = '0';
+      el.style.transform = 'translate(50%, 50%)';
+  }
+}
+
 /// Converts a [BitmapDescriptor] into a [Node] that can be used as
 /// [AdvancedMarker]'s icon.
 Future<web.Node?> _advancedMarkerIconFromBitmapDescriptor(
@@ -763,16 +878,17 @@ Future<O> _markerOptionsFromMarker<T, O>(
   T? currentMarker,
 ) async {
   if (marker is AdvancedMarker) {
+    final web.Node? iconNode = await _advancedMarkerIconFromBitmapDescriptor(
+      marker.icon,
+      opacity: marker.alpha,
+      isVisible: marker.visible,
+      rotation: marker.rotation,
+    );
     final options = gmaps.AdvancedMarkerElementOptions()
       ..collisionBehavior = _markerCollisionBehaviorToGmCollisionBehavior(
         marker.collisionBehavior,
       )
-      ..content = await _advancedMarkerIconFromBitmapDescriptor(
-        marker.icon,
-        opacity: marker.alpha,
-        isVisible: marker.visible,
-        rotation: marker.rotation,
-      )
+      ..content = _buildAdvancedMarkerContent(marker, iconNode)
       ..position = gmaps.LatLng(
         marker.position.latitude,
         marker.position.longitude,

@@ -35,10 +35,15 @@ class AdvancedMarker extends Marker {
     super.onDragEnd,
     int zIndex = 0,
     this.collisionBehavior = MarkerCollisionBehavior.requiredDisplay,
+    this.webOverlay,
   }) : super(zIndex: zIndex.toDouble());
 
   /// Indicates how the marker behaves when it collides with other markers.
   final MarkerCollisionBehavior collisionBehavior;
+
+  /// Web-only DOM overlay (label, badge, CSS class) composed on top of the
+  /// marker icon. Ignored on mobile — bake desired visuals into [icon].
+  final WebMarkerOverlay? webOverlay;
 
   /// Creates a new [AdvancedMarker] object whose values are the same as this
   /// instance, unless overwritten by the specified parameters.
@@ -71,6 +76,7 @@ class AdvancedMarker extends Marker {
     ClusterManagerId? clusterManagerIdParam,
     MarkerCollisionBehavior? collisionBehaviorParam,
     double? altitudeParam,
+    WebMarkerOverlay? webOverlayParam,
   }) {
     return AdvancedMarker(
       markerId: markerId,
@@ -91,6 +97,7 @@ class AdvancedMarker extends Marker {
       onDragEnd: onDragEndParam ?? onDragEnd,
       clusterManagerId: clusterManagerIdParam ?? clusterManagerId,
       collisionBehavior: collisionBehaviorParam ?? collisionBehavior,
+      webOverlay: webOverlayParam ?? webOverlay,
     );
   }
 
@@ -140,7 +147,8 @@ class AdvancedMarker extends Marker {
         visible == other.visible &&
         zIndex == other.zIndex &&
         clusterManagerId == other.clusterManagerId &&
-        collisionBehavior == other.collisionBehavior;
+        collisionBehavior == other.collisionBehavior &&
+        webOverlay == other.webOverlay;
   }
 
   @override
