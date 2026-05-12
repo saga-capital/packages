@@ -310,6 +310,20 @@ class AdvancedMarkerController
         }),
       );
     }
+    if (onEnter != null) {
+      _subscriptions.add(
+        _domEventStream(marker.element, 'mouseenter').listen(
+          (_) => onEnter(),
+        ),
+      );
+    }
+    if (onExit != null) {
+      _subscriptions.add(
+        _domEventStream(marker.element, 'mouseleave').listen(
+          (_) => onExit(),
+        ),
+      );
+    }
   }
 
   @override
@@ -362,4 +376,19 @@ class AdvancedMarkerController
 
   @override
   void setMap(gmaps.Map map) => _marker?.map = map;
+}
+
+Stream<web.Event> _domEventStream(web.HTMLElement element, String eventType) {
+  late StreamController<web.Event> controller;
+  late JSFunction handler;
+  controller = StreamController<web.Event>(
+    onListen: () {
+      handler = ((web.Event event) => controller.add(event)).toJS;
+      element.addEventListener(eventType, handler);
+    },
+    onCancel: () {
+      element.removeEventListener(eventType, handler);
+    },
+  );
+  return controller.stream;
 }
