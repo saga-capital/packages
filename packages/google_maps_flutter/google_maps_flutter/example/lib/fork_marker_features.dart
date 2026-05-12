@@ -9,12 +9,15 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'page.dart';
 
-/// Demonstrates the fork-specific marker features:
-///   * Legacy API (Marker)        — markerLabel, animate, onEnter/onExit
-///   * New API (AdvancedMarker)   — webOverlay { label, badge, className }
+/// Side-by-side comparison showcasing the fork-specific marker features.
 ///
-/// Toggle the switch in the app bar to compare the two paths on the same map.
-/// Note: the AdvancedMarker tab requires a [mapId] (provided via constructor).
+/// Left  — Legacy fork Marker: stuck with the default red Google pin plus a
+///         single line of text via markerLabel, optional BOUNCE animation on
+///         hover.
+/// Right — AdvancedMarker + WebMarkerOverlay: pure-DOM markers shaped, styled,
+///         and animated entirely from CSS (see web/fd_marker_styles.css):
+///         pill cards with multi-line content, status rings, pulse animation
+///         on live drivers, hover lift, click-to-select gold ring.
 class ForkMarkerFeaturesPage extends GoogleMapExampleAppPage {
   const ForkMarkerFeaturesPage({super.key, required this.mapId})
     : super(const Icon(Icons.label_important), 'Fork: marker label & hover');
@@ -25,6 +28,25 @@ class ForkMarkerFeaturesPage extends GoogleMapExampleAppPage {
   Widget build(BuildContext context) {
     return _ForkMarkerFeaturesBody(mapId: mapId);
   }
+}
+
+enum DriverStatus { live, busy, offline }
+
+class _Driver {
+  const _Driver({
+    required this.id,
+    required this.pos,
+    required this.name,
+    required this.eta,
+    required this.status,
+    this.unread = 0,
+  });
+  final String id;
+  final LatLng pos;
+  final String name;
+  final String eta;
+  final DriverStatus status;
+  final int unread;
 }
 
 class _ForkMarkerFeaturesBody extends StatefulWidget {
@@ -39,23 +61,45 @@ class _ForkMarkerFeaturesBody extends StatefulWidget {
 
 class _ForkMarkerFeaturesBodyState extends State<_ForkMarkerFeaturesBody> {
   static const LatLng _center = LatLng(59.9139, 10.7522);
-  static const List<({String id, LatLng pos, String name, int unread})>
-  _drivers = <({String id, LatLng pos, String name, int unread})>[
-    (id: 'd1', pos: LatLng(59.9245, 10.7591), name: 'FD-1', unread: 0),
-    (id: 'd2', pos: LatLng(59.9127, 10.7461), name: 'FD-2', unread: 3),
-    (id: 'd3', pos: LatLng(59.9171, 10.7674), name: 'FD-3', unread: 1),
-    (id: 'd4', pos: LatLng(59.9080, 10.7522), name: 'FD-4', unread: 0),
+  static const List<_Driver> _drivers = <_Driver>[
+    _Driver(
+      id: 'd1',
+      pos: LatLng(59.9245, 10.7591),
+      name: 'FD-1 Anna',
+      eta: '2 min',
+      status: DriverStatus.live,
+    ),
+    _Driver(
+      id: 'd2',
+      pos: LatLng(59.9127, 10.7461),
+      name: 'FD-2 Bjørn',
+      eta: '5 min',
+      status: DriverStatus.busy,
+      unread: 3,
+    ),
+    _Driver(
+      id: 'd3',
+      pos: LatLng(59.9171, 10.7674),
+      name: 'FD-3 Cassia',
+      eta: 'idle',
+      status: DriverStatus.offline,
+    ),
+    _Driver(
+      id: 'd4',
+      pos: LatLng(59.9080, 10.7522),
+      name: 'FD-4 Dag',
+      eta: '8 min',
+      status: DriverStatus.live,
+      unread: 1,
+    ),
   ];
 
-  bool _useAdvanced = false;
   MarkerId? _hoveredId;
   MarkerId? _selectedId;
 
   // -- Legacy fork API --------------------------------------------------------
-  // Marker.markerLabel renders text directly on the gmaps.Marker via
-  // _markerLabelFromMarker (web only — mobile bakes label into the icon
-  // BitmapDescriptor). animate=true triggers Animation.BOUNCE (web only).
-  // onEnter/onExit fire DOM mouseover/mouseout on the marker glyph.
+  // What we get: default red Google pin, one line of text below, optional
+  // BOUNCE animation. No shapes, no multi-line, no per-driver visual identity.
   Set<Marker> _buildLegacyMarkers() {
     return _drivers.map((driver) {
       final id = MarkerId(driver.id);
@@ -65,7 +109,8 @@ class _ForkMarkerFeaturesBodyState extends State<_ForkMarkerFeaturesBody> {
         markerId: id,
         position: driver.pos,
         markerLabel: MarkerLabel(
-          text: '${driver.name}${driver.unread > 0 ? " (${driver.unread})" : ""}',
+          text: '${driver.name} · ${driver.eta}'
+              '${driver.unread > 0 ? " · ${driver.unread}" : ""}',
           color: isSelected ? const Color(0xFFFFD700) : Colors.white,
           fontSize: '12px',
           fontWeight: '600',
@@ -79,95 +124,126 @@ class _ForkMarkerFeaturesBodyState extends State<_ForkMarkerFeaturesBody> {
     }).toSet();
   }
 
-  // -- New API ---------------------------------------------------------------
-  // AdvancedMarker.icon stays plain — the app's bitmap cache stays warm
-  // because the label text isn't part of the icon's key. The label lives in
-  // DOM via webOverlay, mutating textContent only. The className composes
-  // hover/selected state without rebuilding the icon. Mobile ignores
-  // webOverlay; app would still bake label into icon for mobile rendering.
+  // -- New API (pure-DOM) ----------------------------------------------------
+  // Each marker is a styled <div> built from a className + label/badge
+  // combination. The label slot carries the driver name; the badge slot the
+  // unread count. CSS in web/fd_marker_styles.css owns shape, ring, pulse,
+  // hover lift, selected ring. No bitmap, no Flutter rebuild on hover.
   Set<Marker> _buildAdvancedMarkers() {
     return _drivers.map((driver) {
       final id = MarkerId(driver.id);
       final isSelected = _selectedId == id;
+      final String statusClass = switch (driver.status) {
+        DriverStatus.live => 'is-live',
+        DriverStatus.busy => 'is-busy',
+        DriverStatus.offline => 'is-offline',
+      };
       return AdvancedMarker(
         markerId: id,
         position: driver.pos,
         webOverlay: WebMarkerOverlay(
           label: WebMarkerLabel(
-            text: driver.name,
-            color: Colors.white,
-            fontSize: '12px',
-            fontWeight: '600',
+            text: '${driver.name}\n${driver.eta}',
+            className: 'fd-card__label',
           ),
           badge: driver.unread > 0
               ? WebMarkerBadge(
                   text: driver.unread.toString(),
-                  color: Colors.red,
+                  className: 'fd-card__badge',
                 )
               : null,
           className:
-              'fd-driver-pin${isSelected ? " is-selected" : ""}',
+              'fd-card $statusClass${isSelected ? " is-selected" : ""}',
         ),
         onTap: () => setState(() => _selectedId = id),
       );
     }).toSet();
   }
 
+  Widget _legacyPane() {
+    return _MapPane(
+      title: 'Legacy fork Marker',
+      caption:
+          'Red pin + single-line markerLabel + BOUNCE animation on hover',
+      map: GoogleMap(
+        initialCameraPosition: const CameraPosition(
+          target: _center,
+          zoom: 13,
+        ),
+        markers: _buildLegacyMarkers(),
+      ),
+    );
+  }
+
+  Widget _advancedPane() {
+    if (widget.mapId == null) {
+      return const _MapPane(
+        title: 'AdvancedMarker + webOverlay',
+        caption: 'Set _mapId in main.dart to enable',
+        map: ColoredBox(color: Color(0xFFEEEEEE)),
+      );
+    }
+    return _MapPane(
+      title: 'AdvancedMarker + webOverlay',
+      caption:
+          'Pure-DOM pill cards · status ring · pulse for live · hover lift '
+          '· click for gold ring',
+      map: GoogleMap(
+        mapId: widget.mapId,
+        markerType: GoogleMapMarkerType.advancedMarker,
+        initialCameraPosition: const CameraPosition(
+          target: _center,
+          zoom: 13,
+        ),
+        markers: _buildAdvancedMarkers(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final canUseAdvanced = widget.mapId != null;
-    final Set<Marker> markers = _useAdvanced
-        ? _buildAdvancedMarkers()
-        : _buildLegacyMarkers();
-    return Column(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: <Widget>[
-              const Text('Legacy fork Marker  '),
-              Switch(
-                value: _useAdvanced,
-                onChanged: canUseAdvanced
-                    ? (bool v) => setState(() {
-                        _useAdvanced = v;
-                        _hoveredId = null;
-                      })
-                    : null,
-              ),
-              const Text('  AdvancedMarker + webOverlay'),
-              if (!canUseAdvanced) ...<Widget>[
-                const SizedBox(width: 8),
-                const Tooltip(
-                  message: 'Set _mapId in main.dart to enable',
-                  child: Icon(Icons.info_outline, size: 18),
-                ),
-              ],
-            ],
-          ),
-        ),
-        Expanded(
-          child: GoogleMap(
-            mapId: _useAdvanced ? widget.mapId : null,
-            markerType: _useAdvanced
-                ? GoogleMapMarkerType.advancedMarker
-                : GoogleMapMarkerType.marker,
-            initialCameraPosition: const CameraPosition(
-              target: _center,
-              zoom: 13,
-            ),
-            markers: markers,
-          ),
-        ),
+        Expanded(child: _legacyPane()),
+        const VerticalDivider(width: 1),
+        Expanded(child: _advancedPane()),
+      ],
+    );
+  }
+}
+
+class _MapPane extends StatelessWidget {
+  const _MapPane({
+    required this.title,
+    required this.caption,
+    required this.map,
+  });
+
+  final String title;
+  final String caption;
+  final Widget map;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
         Padding(
           padding: const EdgeInsets.all(8),
           child: Text(
-            _useAdvanced
-                ? 'AdvancedMarker: hover via CSS (.fd-driver-pin:hover { ... }); '
-                      'selection via className flip; badge as DOM span.'
-                : 'Legacy Marker: hover via onEnter/onExit; animate=BOUNCE on hover; '
-                      'label as gmaps.MarkerLabel.',
-            style: const TextStyle(fontSize: 12),
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        Expanded(child: map),
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(
+            caption,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 11, color: Colors.black54),
           ),
         ),
       ],

@@ -36,7 +36,7 @@ import 'tile_overlay.dart';
 
 /// Place your map ID here. Map ID is required for pages that use advanced
 /// markers.
-const String? _mapId = null;
+const String? _mapId = '3994be900ec44bda4dc0a98a';
 
 final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
   const MapUiPage(),

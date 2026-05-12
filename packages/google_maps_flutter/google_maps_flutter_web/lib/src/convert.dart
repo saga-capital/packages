@@ -634,14 +634,24 @@ web.Node? _buildAdvancedMarkerContent(
     return iconNode;
   }
 
+  // Decide what visual fills the wrapper:
+  // - explicit icon → use it
+  // - no icon, no className → fall back to default gmaps.PinElement so the
+  //   marker stays visible and label/badge have something to anchor to
+  // - no icon, className present → assume CSS sizes the wrapper; render a
+  //   pure-DOM marker with no Google pin underneath
+  final bool hasClassName =
+      overlay.className != null && overlay.className!.isNotEmpty;
+  final web.Node? anchorChild = iconNode ?? (hasClassName ? null : gmaps.PinElement());
+
   final wrapper = web.document.createElement('div') as web.HTMLDivElement
     ..style.position = 'relative'
     ..style.display = 'inline-block';
-  if (overlay.className != null && overlay.className!.isNotEmpty) {
+  if (hasClassName) {
     wrapper.className = overlay.className!;
   }
-  if (iconNode != null) {
-    wrapper.appendChild(iconNode);
+  if (anchorChild != null) {
+    wrapper.appendChild(anchorChild);
   }
 
   final WebMarkerLabel? label = overlay.label;

@@ -1,46 +1,146 @@
-/* Stylesheet consumed by ForkMarkerFeaturesPage when toggled to
-   AdvancedMarker + WebMarkerOverlay. Add to web/index.html:
-     <link rel="stylesheet" href="fd_marker_styles.css"> */
+/* Stylesheet consumed by ForkMarkerFeaturesPage when the right map renders
+   AdvancedMarker + WebMarkerOverlay. Loaded from web/index.html. */
 
-.fd-driver-pin {
-  /* Wrapper inherits anchor/positioning from gmaps; we only style appearance. */
-  transition: transform 0.18s ease-out, filter 0.18s ease-out;
-}
+/* ------------------------------------------------------------------
+   Card marker — pure-DOM, no Google pin underneath.
 
-.fd-driver-pin:hover {
-  /* CSS-only hover scale — no Flutter rebuild, no plugin state. */
-  transform: scale(1.15);
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
-  cursor: pointer;
-}
+   Structure (built by _buildAdvancedMarkerContent in convert.dart):
+     <div class="fd-card is-live"|"is-busy"|"is-offline">
+       <span class="fd-card__label">FD-1 Anna\n2 min</span>
+       <span class="fd-card__badge">3</span>     <!-- optional -->
+     </div>
 
-.fd-driver-pin.is-selected {
-  /* App-flipped className when user taps a marker. */
-  filter: drop-shadow(0 0 8px gold);
-}
+   .fd-card sizes the wrapper; label/badge are absolutely positioned
+   children that anchor to it.
+   ------------------------------------------------------------------ */
 
-/* Label styling lives here when WebMarkerLabel.className is set. The example
-   uses inline styles for clarity but production apps should prefer this. */
-.fd-driver-pin > span:first-of-type {
-  /* The label span ends up as the wrapper's child. */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
-/* Badge styling (unread count). Example uses inline background-color via
-   WebMarkerBadge.color — uncomment to take over via class instead. */
-/*
-.fd-driver-pin > span:last-of-type {
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
-  background: #e53935;
+.fd-card {
+  /* Size the wrapper so absolutely-positioned children have a frame. */
+  min-width: 120px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
   color: white;
-  font-size: 11px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.25),
+    0 0 0 3px rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transform-origin: bottom center;
+  transition:
+    transform 0.18s ease-out,
+    box-shadow 0.18s ease-out,
+    filter 0.18s ease-out;
+  position: relative;
+}
+
+/* The arrow tip below the card pointing to the map location. */
+.fd-card::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* The label slot — has className "fd-card__label" from Dart side.
+   textContent contains the driver name + newline + ETA. white-space: pre
+   honours the newline as a line break. */
+.fd-card__label {
+  position: static !important;     /* override inline absolute positioning */
+  transform: none !important;
+  display: block;
+  font-size: 12px;
   font-weight: 700;
+  line-height: 1.25;
+  white-space: pre;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+/* The badge slot — appears top-right with the unread count. */
+.fd-card__badge {
+  position: absolute !important;
+  top: -6px !important;
+  right: -6px !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: #ef4444;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 4px;
-  box-sizing: border-box;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 2px white;
+  pointer-events: none;
 }
-*/
+
+/* ------- Per-status theming via class flip ------- */
+
+.fd-card.is-live {
+  background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+}
+
+.fd-card.is-busy {
+  background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+}
+
+.fd-card.is-offline {
+  background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+  filter: saturate(0.6);
+}
+
+/* ------- Live pulse — concentric rings expanding from the card ------- */
+
+.fd-card.is-live::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 18px;
+  border: 3px solid rgba(16, 185, 129, 0.7);
+  animation: fd-pulse 1.6s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes fd-pulse {
+  0%   { transform: scale(1);   opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ------- Hover lift (CSS only, no Flutter rebuild) ------- */
+
+.fd-card:hover {
+  transform: translateY(-4px) scale(1.06);
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.35),
+    0 0 0 3px rgba(255, 255, 255, 1);
+  z-index: 1;
+}
+
+/* ------- Selected — set by className flip from Dart on tap ------- */
+
+.fd-card.is-selected {
+  box-shadow:
+    0 0 0 4px gold,
+    0 8px 18px rgba(0, 0, 0, 0.4);
+  animation: fd-selected-bob 0.45s ease-out;
+}
+
+@keyframes fd-selected-bob {
+  0%   { transform: scale(1); }
+  50%  { transform: translateY(-8px) scale(1.12); }
+  100% { transform: scale(1); }
+}
