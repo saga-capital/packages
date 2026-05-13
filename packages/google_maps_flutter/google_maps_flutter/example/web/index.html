@@ -38,8 +38,31 @@ found in the LICENSE file. -->
   <!-- Styles for ForkMarkerFeaturesPage (AdvancedMarker + WebMarkerOverlay demo). -->
   <link rel="stylesheet" href="fd_marker_styles.css">
 
-  <!-- This API key comes from: go/flutter-maps-web-tests-api-key (GCP project: flutter-infra) -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCyOuGVCRdgJ2rpgF-FD4NFjEl2sBG9mJc&libraries=marker,geometry,visualization"></script>
+  <!--
+    Google Maps JS API key is loaded from a local-only sidecar file:
+    `web/local_keys.js` (which is .gitignored). See `web/local_keys.example.js`
+    for a template — copy it to `web/local_keys.js` and fill in your own key.
+    The sidecar defines `window.GMAPS_KEY`, which the inline script below uses
+    to inject the maps.googleapis.com script tag at runtime.
+  -->
+  <script src="local_keys.js"></script>
+  <script>
+    (function () {
+      var key = (typeof window !== 'undefined' && window.GMAPS_KEY) || '';
+      if (!key || key === 'YOUR_GOOGLE_MAPS_JS_API_KEY_HERE') {
+        console.error(
+          'Google Maps JS API key missing. Copy web/local_keys.example.js ' +
+          'to web/local_keys.js and set window.GMAPS_KEY to your real key.'
+        );
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' +
+          encodeURIComponent(key) +
+          '&libraries=marker,geometry,visualization';
+      document.head.appendChild(s);
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@googlemaps/markerclusterer@2.5.3/dist/index.umd.min.js"></script>
 </head>
 <body>

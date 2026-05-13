@@ -18,6 +18,10 @@ import 'fork_polyline_animation.dart';
 import 'ground_overlay.dart';
 import 'heatmap.dart';
 import 'lite_mode.dart';
+// Local-only file containing the developer's Google Maps "Map ID". This file
+// is .gitignored. See `local_keys.example.dart` for a template — copy it to
+// `local_keys.dart` and fill in your own value.
+import 'local_keys.dart';
 import 'map_click.dart';
 import 'map_coordinates.dart';
 import 'map_map_id.dart';
@@ -35,9 +39,15 @@ import 'scrolling_map.dart';
 import 'snapshot.dart';
 import 'tile_overlay.dart';
 
-/// Place your map ID here. Map ID is required for pages that use advanced
-/// markers.
-const String? _mapId = '3994be900ec44bda4dc0a98a';
+/// Map ID is required for pages that use advanced markers.
+///
+/// Resolution order:
+///   1. `--dart-define=GMAPS_MAP_ID=<id>` if provided at build/run time.
+///   2. The `localMapId` constant from `lib/local_keys.dart` (local-only,
+///      gitignored). See `lib/local_keys.example.dart` for a template.
+const String? _mapId = bool.hasEnvironment('GMAPS_MAP_ID')
+    ? String.fromEnvironment('GMAPS_MAP_ID')
+    : localMapId;
 
 final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
   const ForkMarkerFeaturesPage(mapId: _mapId),

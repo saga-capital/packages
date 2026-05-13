@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local-only secrets (Google Maps API key + Map ID). These are NOT committed.
+# See lib/local_keys.example.dart and web/local_keys.example.js for templates.
+/lib/local_keys.dart
+/web/local_keys.js
