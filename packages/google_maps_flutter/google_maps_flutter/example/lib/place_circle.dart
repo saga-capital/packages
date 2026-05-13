@@ -89,12 +89,15 @@ class PlaceCircleBodyState extends State<PlaceCircleBody> {
     _circleIdCounter++;
     final circleId = CircleId(circleIdVal);
 
+    const Color initialFill = Colors.green;
+    const Color initialStroke = Colors.orange;
+    const int initialWidth = 5;
     final circle = Circle(
       circleId: circleId,
       consumeTapEvents: true,
-      strokeColor: Colors.orange,
-      fillColor: Colors.green,
-      strokeWidth: 5,
+      strokeColor: initialStroke,
+      fillColor: initialFill,
+      strokeWidth: initialWidth,
       center: _createCenter(),
       radius: 50000,
       onTap: () {
@@ -113,6 +116,11 @@ class PlaceCircleBodyState extends State<PlaceCircleBody> {
         maxRadiusPercent: 115,
         periodMs: 1800,
       ),
+      webOverlay: _overlayFor(
+        strokeWidth: initialWidth,
+        strokeColor: initialStroke,
+        fillColor: initialFill,
+      ),
     );
 
     setState(() {
@@ -129,29 +137,76 @@ class PlaceCircleBodyState extends State<PlaceCircleBody> {
 
   void _changeFillColor(CircleId circleId) {
     final Circle circle = circles[circleId]!;
+    final Color next = colors[++fillColorsIndex % colors.length];
     setState(() {
       circles[circleId] = circle.copyWith(
-        fillColorParam: colors[++fillColorsIndex % colors.length],
+        fillColorParam: next,
+        webOverlayParam: _overlayFor(
+          strokeWidth: circle.strokeWidth,
+          strokeColor: circle.strokeColor,
+          fillColor: next,
+        ),
       );
     });
   }
 
   void _changeStrokeColor(CircleId circleId) {
     final Circle circle = circles[circleId]!;
+    final Color next = colors[++strokeColorsIndex % colors.length];
     setState(() {
       circles[circleId] = circle.copyWith(
-        strokeColorParam: colors[++strokeColorsIndex % colors.length],
+        strokeColorParam: next,
+        webOverlayParam: _overlayFor(
+          strokeWidth: circle.strokeWidth,
+          strokeColor: next,
+          fillColor: circle.fillColor,
+        ),
       );
     });
   }
 
   void _changeStrokeWidth(CircleId circleId) {
     final Circle circle = circles[circleId]!;
+    final int next = widths[++widthsIndex % widths.length];
     setState(() {
       circles[circleId] = circle.copyWith(
-        strokeWidthParam: widths[++widthsIndex % widths.length],
+        strokeWidthParam: next,
+        webOverlayParam: _overlayFor(
+          strokeWidth: next,
+          strokeColor: circle.strokeColor,
+          fillColor: circle.fillColor,
+        ),
       );
     });
+  }
+
+  /// Rebuilds a [WebCircleOverlay] reflecting the current [strokeWidth],
+  /// [strokeColor], and [fillColor]. Called from `_add` and from every
+  /// `_change*` toggle so the SVG overlay tracks the per-circle state.
+  WebCircleOverlay _overlayFor({
+    required int strokeWidth,
+    required Color strokeColor,
+    required Color fillColor,
+  }) {
+    return WebCircleOverlay(
+      fill: WebGradientPaint.radial(
+        stops: <Color>[
+          Color.lerp(fillColor, Colors.white, 0.55)!,
+          fillColor,
+          Color.lerp(fillColor, Colors.black, 0.35)!,
+        ],
+      ),
+      stroke: WebStripesPaint(
+        colorA: strokeColor,
+        colorB: const Color(0x00000000),
+        stripeWidthPx: 8,
+        gapWidthPx: 4,
+        angleDegrees: 90,
+        animationSpeedPxPerSecond: 12,
+      ),
+      strokeWidth: strokeWidth.toDouble(),
+      glow: WebGlow(color: strokeColor.withValues(alpha: 0.7), blurPx: 6),
+    );
   }
 
   @override

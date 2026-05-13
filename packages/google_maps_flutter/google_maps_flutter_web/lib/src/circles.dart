@@ -45,6 +45,14 @@ class CirclesController extends GeometryController {
       },
     );
     controller.setAnimation(circle.webAnimation, circle.radius);
+    controller.setOverlay(
+      circle.webOverlay,
+      circle.center,
+      circle.radius,
+      circle.strokeWidth.toDouble(),
+      circle.zIndex,
+      googleMap,
+    );
     _circleIdToController[circle.circleId] = controller;
   }
 
@@ -58,6 +66,14 @@ class CirclesController extends GeometryController {
         _circleIdToController[circle.circleId];
     circleController?.update(_circleOptionsFromCircle(circle));
     circleController?.setAnimation(circle.webAnimation, circle.radius);
+    circleController?.setOverlay(
+      circle.webOverlay,
+      circle.center,
+      circle.radius,
+      circle.strokeWidth.toDouble(),
+      circle.zIndex,
+      googleMap,
+    );
   }
 
   /// Removes a set of [CircleId]s from the cache.

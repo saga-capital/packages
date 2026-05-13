@@ -958,12 +958,14 @@ MarkerId getMarkerId(Object marker) {
 }
 
 gmaps.CircleOptions _circleOptionsFromCircle(Circle circle) {
+  final bool hasOverlay = circle.webOverlay != null;
   final circleOptions = gmaps.CircleOptions()
     ..strokeColor = _getCssColor(circle.strokeColor)
-    ..strokeOpacity = _getCssOpacity(circle.strokeColor)
+    ..strokeOpacity =
+        hasOverlay ? 0 : _getCssOpacity(circle.strokeColor)
     ..strokeWeight = circle.strokeWidth
     ..fillColor = _getCssColor(circle.fillColor)
-    ..fillOpacity = _getCssOpacity(circle.fillColor)
+    ..fillOpacity = hasOverlay ? 0 : _getCssOpacity(circle.fillColor)
     ..center = gmaps.LatLng(circle.center.latitude, circle.center.longitude)
     ..radius = circle.radius
     ..visible = circle.visible
@@ -1023,14 +1025,19 @@ gmaps.PolygonOptions _polygonOptionsFromPolygon(
     paths.add(correctHole);
   }
 
+  // When an SVG overlay carries the visuals, hide the native fill /
+  // stroke so the overlay shows alone. Hit testing still uses path
+  // geometry, so onTap / onEnter / onExit fire as usual.
+  final bool hasOverlay = polygon.webOverlay != null;
   return gmaps.PolygonOptions()
     ..paths = paths.map((List<gmaps.LatLng> e) => e.toJS).toList().toJS
     ..strokeColor = _getCssColor(polygon.strokeColor)
-    ..strokeOpacity = _getCssOpacity(polygon.strokeColor)
+    ..strokeOpacity =
+        hasOverlay ? 0 : _getCssOpacity(polygon.strokeColor)
     ..clickable = polygon.clickable
     ..strokeWeight = polygon.strokeWidth
     ..fillColor = _getCssColor(polygon.fillColor)
-    ..fillOpacity = _getCssOpacity(polygon.fillColor)
+    ..fillOpacity = hasOverlay ? 0 : _getCssOpacity(polygon.fillColor)
     ..visible = polygon.visible
     ..zIndex = polygon.zIndex
     ..geodesic = polygon.geodesic

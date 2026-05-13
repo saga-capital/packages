@@ -33,6 +33,7 @@ import 'src/utils.dart';
 
 part 'src/circle.dart';
 part 'src/circle_animation.dart';
+part 'src/circle_overlay.dart';
 part 'src/circles.dart';
 part 'src/convert.dart';
 part 'src/google_maps_controller.dart';
@@ -47,7 +48,9 @@ part 'src/overlay.dart';
 part 'src/overlays.dart';
 part 'src/polygon.dart';
 part 'src/polygon_animation.dart';
+part 'src/polygon_overlay.dart';
 part 'src/polygons.dart';
+part 'src/shape_overlay.dart';
 part 'src/polyline.dart';
 part 'src/polyline_animation.dart';
 part 'src/polyline_gradient.dart';

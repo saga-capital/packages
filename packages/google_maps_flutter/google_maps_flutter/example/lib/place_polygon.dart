@@ -84,12 +84,15 @@ class PlacePolygonBodyState extends State<PlacePolygonBody> {
     final polygonIdVal = 'polygon_id_$_polygonIdCounter';
     final polygonId = PolygonId(polygonIdVal);
 
+    const Color initialFill = Colors.green;
+    const Color initialStroke = Colors.orange;
+    const int initialWidth = 5;
     final polygon = Polygon(
       polygonId: polygonId,
       consumeTapEvents: true,
-      strokeColor: Colors.orange,
-      strokeWidth: 5,
-      fillColor: Colors.green,
+      strokeColor: initialStroke,
+      strokeWidth: initialWidth,
+      fillColor: initialFill,
       points: _createPoints(),
       onTap: () {
         _onPolygonTapped(polygonId);
@@ -97,11 +100,16 @@ class PlacePolygonBodyState extends State<PlacePolygonBody> {
       // Web-only — fill and stroke colours breathe between two endpoints
       // every 2.4 s. Other platforms ignore this field.
       webAnimation: WebPolygonAnimation(
-        fillColorA: Colors.green.withValues(alpha: 0.25),
+        fillColorA: initialFill.withValues(alpha: 0.25),
         fillColorB: Colors.purple.withValues(alpha: 0.5),
-        strokeColorA: Colors.orange,
+        strokeColorA: initialStroke,
         strokeColorB: Colors.pinkAccent,
         periodMs: 2400,
+      ),
+      webOverlay: _overlayFor(
+        strokeWidth: initialWidth,
+        strokeColor: initialStroke,
+        fillColor: initialFill,
       ),
     );
 
@@ -129,27 +137,45 @@ class PlacePolygonBodyState extends State<PlacePolygonBody> {
 
   void _changeStrokeColor(PolygonId polygonId) {
     final Polygon polygon = polygons[polygonId]!;
+    final Color next = colors[++strokeColorsIndex % colors.length];
     setState(() {
       polygons[polygonId] = polygon.copyWith(
-        strokeColorParam: colors[++strokeColorsIndex % colors.length],
+        strokeColorParam: next,
+        webOverlayParam: _overlayFor(
+          strokeWidth: polygon.strokeWidth,
+          strokeColor: next,
+          fillColor: polygon.fillColor,
+        ),
       );
     });
   }
 
   void _changeFillColor(PolygonId polygonId) {
     final Polygon polygon = polygons[polygonId]!;
+    final Color next = colors[++fillColorsIndex % colors.length];
     setState(() {
       polygons[polygonId] = polygon.copyWith(
-        fillColorParam: colors[++fillColorsIndex % colors.length],
+        fillColorParam: next,
+        webOverlayParam: _overlayFor(
+          strokeWidth: polygon.strokeWidth,
+          strokeColor: polygon.strokeColor,
+          fillColor: next,
+        ),
       );
     });
   }
 
   void _changeWidth(PolygonId polygonId) {
     final Polygon polygon = polygons[polygonId]!;
+    final int next = widths[++widthsIndex % widths.length];
     setState(() {
       polygons[polygonId] = polygon.copyWith(
-        strokeWidthParam: widths[++widthsIndex % widths.length],
+        strokeWidthParam: next,
+        webOverlayParam: _overlayFor(
+          strokeWidth: next,
+          strokeColor: polygon.strokeColor,
+          fillColor: polygon.fillColor,
+        ),
       );
     });
   }
@@ -168,6 +194,37 @@ class PlacePolygonBodyState extends State<PlacePolygonBody> {
     setState(() {
       polygons[polygonId] = polygon.copyWith(holesParam: <List<LatLng>>[]);
     });
+  }
+
+  /// Rebuilds a [WebPolygonOverlay] reflecting the current [strokeWidth],
+  /// [strokeColor], and [fillColor]. Called from `_add` and from every
+  /// `_change*` toggle so the SVG overlay tracks the per-polygon state.
+  WebPolygonOverlay _overlayFor({
+    required int strokeWidth,
+    required Color strokeColor,
+    required Color fillColor,
+  }) {
+    return WebPolygonOverlay(
+      fill: WebStripesPaint(
+        colorA: fillColor,
+        colorB: fillColor.withValues(alpha: 0.25),
+        stripeWidthPx: 10,
+        gapWidthPx: 6,
+        angleDegrees: 45,
+        animationSpeedPxPerSecond: 30,
+      ),
+      stroke: WebGradientPaint.linear(
+        stops: <Color>[
+          strokeColor,
+          Color.lerp(strokeColor, Colors.black, 0.45)!,
+          strokeColor,
+        ],
+        repeatCount: 3,
+        animationSpeedPercentPerSecond: 40,
+      ),
+      strokeWidth: strokeWidth.toDouble(),
+      glow: WebGlow(color: strokeColor.withValues(alpha: 0.6), blurPx: 8),
+    );
   }
 
   @override

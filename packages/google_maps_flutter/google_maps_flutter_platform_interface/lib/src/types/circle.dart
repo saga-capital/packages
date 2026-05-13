@@ -35,6 +35,7 @@ class Circle implements MapsObject<Circle> {
     this.onEnter,
     this.onExit,
     this.webAnimation,
+    this.webOverlay,
   });
 
   /// Uniquely identifies a [Circle].
@@ -89,6 +90,9 @@ class Circle implements MapsObject<Circle> {
   /// Web-only pulsing-radius animation overlaid on this circle.
   final WebCircleAnimation? webAnimation;
 
+  /// Web-only SVG overlay for gradient / pattern fill + stroke + glow.
+  final WebCircleOverlay? webOverlay;
+
   /// Creates a new [Circle] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
   Circle copyWith({
@@ -104,6 +108,7 @@ class Circle implements MapsObject<Circle> {
     VoidCallback? onEnterParam,
     VoidCallback? onExitParam,
     WebCircleAnimation? webAnimationParam,
+    WebCircleOverlay? webOverlayParam,
   }) {
     return Circle(
       circleId: circleId,
@@ -119,6 +124,7 @@ class Circle implements MapsObject<Circle> {
       onEnter: onEnterParam ?? onEnter,
       onExit: onExitParam ?? onExit,
       webAnimation: webAnimationParam ?? webAnimation,
+      webOverlay: webOverlayParam ?? webOverlay,
     );
   }
 
@@ -168,7 +174,8 @@ class Circle implements MapsObject<Circle> {
         strokeWidth == other.strokeWidth &&
         visible == other.visible &&
         zIndex == other.zIndex &&
-        webAnimation == other.webAnimation;
+        webAnimation == other.webAnimation &&
+        webOverlay == other.webOverlay;
   }
 
   @override

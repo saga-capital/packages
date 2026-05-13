@@ -48,6 +48,14 @@ class PolygonsController extends GeometryController {
       },
     );
     controller.setAnimation(polygon.webAnimation);
+    controller.setOverlay(
+      polygon.webOverlay,
+      polygon.points,
+      polygon.holes,
+      polygon.strokeWidth.toDouble(),
+      polygon.zIndex,
+      googleMap,
+    );
     _polygonIdToController[polygon.polygonId] = controller;
   }
 
@@ -61,6 +69,14 @@ class PolygonsController extends GeometryController {
         _polygonIdToController[polygon.polygonId];
     polygonController?.update(_polygonOptionsFromPolygon(googleMap, polygon));
     polygonController?.setAnimation(polygon.webAnimation);
+    polygonController?.setOverlay(
+      polygon.webOverlay,
+      polygon.points,
+      polygon.holes,
+      polygon.strokeWidth.toDouble(),
+      polygon.zIndex,
+      googleMap,
+    );
   }
 
   /// Removes a set of [PolygonId]s from the cache.

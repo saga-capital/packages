@@ -36,6 +36,43 @@ class CircleController {
 
   int _animationHandle;
 
+  _CircleShapeOverlay? _shapeOverlay;
+
+  /// Registers (or replaces) an SVG overlay (gradient/pattern fill +
+  /// stroke + glow) on this circle.
+  void setOverlay(
+    WebCircleOverlay? webOverlay,
+    LatLng center,
+    double radiusMeters,
+    double strokeWidth,
+    int zIndex,
+    gmaps.Map map,
+  ) {
+    if (webOverlay == null) {
+      _shapeOverlay?.detach();
+      _shapeOverlay = null;
+      return;
+    }
+    final _CircleShapeOverlay? existing = _shapeOverlay;
+    if (existing != null &&
+        existing.overlay == webOverlay &&
+        existing.zIndex == zIndex &&
+        existing.strokeWidth == (webOverlay.strokeWidth ?? strokeWidth)) {
+      existing.setCircle(center, radiusMeters);
+      return;
+    }
+    existing?.detach();
+    final shape = _CircleShapeOverlay(
+      overlay: webOverlay,
+      strokeWidth: webOverlay.strokeWidth ?? strokeWidth,
+      zIndex: zIndex,
+      center: center,
+      radiusMeters: radiusMeters,
+    );
+    shape.attach(map);
+    _shapeOverlay = shape;
+  }
+
   /// Registers (or replaces) a breathing-radius animation for this circle.
   /// Pass null to clear.
   void setAnimation(WebCircleAnimation? animation, double baseRadius) {
@@ -72,6 +109,8 @@ class CircleController {
       _CircleAnimationManager.instance.unregister(_animationHandle);
       _animationHandle = 0;
     }
+    _shapeOverlay?.detach();
+    _shapeOverlay = null;
     if (_circle != null) {
       _circle!.visible = false;
       _circle!.radius = 0;

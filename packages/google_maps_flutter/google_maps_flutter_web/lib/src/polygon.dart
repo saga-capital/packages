@@ -39,6 +39,45 @@ class PolygonController {
 
   int _animationHandle;
 
+  _PolygonShapeOverlay? _overlay;
+
+  /// Registers (or replaces) an SVG overlay (gradient/pattern fill + stroke
+  /// + glow) on this polygon. The underlying gmaps polygon becomes
+  /// transparent (handled in [_polygonOptionsFromPolygon]) so the SVG
+  /// carries the visuals; hit testing is unchanged.
+  void setOverlay(
+    WebPolygonOverlay? webOverlay,
+    List<LatLng> points,
+    List<List<LatLng>> holes,
+    double strokeWidth,
+    int zIndex,
+    gmaps.Map map,
+  ) {
+    if (webOverlay == null) {
+      _overlay?.detach();
+      _overlay = null;
+      return;
+    }
+    final _PolygonShapeOverlay? existing = _overlay;
+    if (existing != null &&
+        existing.overlay == webOverlay &&
+        existing.zIndex == zIndex &&
+        existing.strokeWidth == (webOverlay.strokeWidth ?? strokeWidth)) {
+      existing.setGeometry(points, holes);
+      return;
+    }
+    existing?.detach();
+    final shape = _PolygonShapeOverlay(
+      overlay: webOverlay,
+      strokeWidth: webOverlay.strokeWidth ?? strokeWidth,
+      zIndex: zIndex,
+      points: points,
+      holes: holes,
+    );
+    shape.attach(map);
+    _overlay = shape;
+  }
+
   /// Registers (or replaces) a colour-cycling animation for this polygon.
   /// Pass null to clear.
   void setAnimation(WebPolygonAnimation? animation) {
@@ -78,6 +117,8 @@ class PolygonController {
       _PolygonAnimationManager.instance.unregister(_animationHandle);
       _animationHandle = 0;
     }
+    _overlay?.detach();
+    _overlay = null;
     if (_polygon != null) {
       _polygon!.visible = false;
       _polygon!.map = null;
