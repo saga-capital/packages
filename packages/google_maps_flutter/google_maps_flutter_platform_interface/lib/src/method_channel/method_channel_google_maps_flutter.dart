@@ -169,6 +169,16 @@ class MethodChannelGoogleMapsFlutter extends GoogleMapsFlutterPlatform {
   }
 
   @override
+  Stream<PolylineEdgeOverEvent> onPolylineEdgeEnter({required int mapId}) {
+    return _events(mapId).whereType<PolylineEdgeOverEvent>();
+  }
+
+  @override
+  Stream<PolylineEdgeOutEvent> onPolylineEdgeExit({required int mapId}) {
+    return _events(mapId).whereType<PolylineEdgeOutEvent>();
+  }
+
+  @override
   Stream<PolygonTapEvent> onPolygonTap({required int mapId}) {
     return _events(mapId).whereType<PolygonTapEvent>();
   }

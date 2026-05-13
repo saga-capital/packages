@@ -39,6 +39,8 @@ class Polyline implements MapsObject<Polyline> {
     this.onTap,
     this.onMouseOver,
     this.onMouseOut,
+    this.onMouseOverEdge,
+    this.onMouseOutEdge,
     this.webAnimation,
   });
 
@@ -124,6 +126,15 @@ class Polyline implements MapsObject<Polyline> {
   /// Callback to receive mouse out events for polyline placed on this map.
   final ValueChanged<LatLng>? onMouseOut;
 
+  /// Edge-aware variant of [onMouseOver]. Fires with the cursor position
+  /// and the index of the edge (segment between `points[i]` and
+  /// `points[i+1]`) closest to the cursor. `-1` indicates the polyline
+  /// has fewer than two points.
+  final void Function(LatLng position, int segmentIndex)? onMouseOverEdge;
+
+  /// Edge-aware variant of [onMouseOut].
+  final void Function(LatLng position, int segmentIndex)? onMouseOutEdge;
+
   /// Web-only flowing-symbol animation rendered along the polyline path
   /// via google.maps IconSequence. Mobile ignores this field.
   final WebPolylineAnimation? webAnimation;
@@ -145,6 +156,8 @@ class Polyline implements MapsObject<Polyline> {
     VoidCallback? onTapParam,
     ValueChanged<LatLng>? onMouseOverParam,
     ValueChanged<LatLng>? onMouseOutParam,
+    void Function(LatLng, int)? onMouseOverEdgeParam,
+    void Function(LatLng, int)? onMouseOutEdgeParam,
     WebPolylineAnimation? webAnimationParam,
   }) {
     return Polyline(
@@ -163,6 +176,8 @@ class Polyline implements MapsObject<Polyline> {
       zIndex: zIndexParam ?? zIndex,
       onMouseOver: onMouseOverParam ?? onMouseOver,
       onMouseOut: onMouseOutParam ?? onMouseOut,
+      onMouseOverEdge: onMouseOverEdgeParam ?? onMouseOverEdge,
+      onMouseOutEdge: onMouseOutEdgeParam ?? onMouseOutEdge,
       webAnimation: webAnimationParam ?? webAnimation,
     );
   }
@@ -227,7 +242,9 @@ class Polyline implements MapsObject<Polyline> {
         visible == other.visible &&
         width == other.width &&
         zIndex == other.zIndex &&
-        webAnimation == other.webAnimation;
+        webAnimation == other.webAnimation &&
+        onMouseOverEdge == other.onMouseOverEdge &&
+        onMouseOutEdge == other.onMouseOutEdge;
   }
 
   @override

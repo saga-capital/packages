@@ -36,6 +36,7 @@ class PolylinesController extends GeometryController {
     final gmPolyline = gmaps.Polyline(polylineOptions)..map = googleMap;
     final controller = PolylineController(
       polyline: gmPolyline,
+      points: polyline.points,
       consumeTapEvents: polyline.consumeTapEvents,
       onTap: () {
         _onPolylineTap(polyline.polylineId);
@@ -45,6 +46,12 @@ class PolylinesController extends GeometryController {
       },
       onMouseOut: (gmaps.LatLng latLng) {
         _onPolylineMouseOut(polyline.polylineId, latLng);
+      },
+      onMouseOverEdge: (LatLng pos, int segmentIndex) {
+        _onPolylineMouseOverEdge(polyline.polylineId, pos, segmentIndex);
+      },
+      onMouseOutEdge: (LatLng pos, int segmentIndex) {
+        _onPolylineMouseOutEdge(polyline.polylineId, pos, segmentIndex);
       },
     );
     controller.setAnimation(polyline.webAnimation, polyline.color);
@@ -62,6 +69,7 @@ class PolylinesController extends GeometryController {
     polylineController?.update(
       _polylineOptionsFromPolyline(googleMap, polyline),
     );
+    polylineController?.setPoints(polyline.points);
     polylineController?.setAnimation(polyline.webAnimation, polyline.color);
   }
 
@@ -93,5 +101,25 @@ class PolylinesController extends GeometryController {
 
   void _onPolylineMouseOut(PolylineId polylineId, gmaps.LatLng latLng) {
     _streamController.add(PolylineOutEvent(mapId, gmLatLngToLatLng(latLng), polylineId));
+  }
+
+  void _onPolylineMouseOverEdge(
+    PolylineId polylineId,
+    LatLng position,
+    int segmentIndex,
+  ) {
+    _streamController.add(
+      PolylineEdgeOverEvent(mapId, position, polylineId, segmentIndex),
+    );
+  }
+
+  void _onPolylineMouseOutEdge(
+    PolylineId polylineId,
+    LatLng position,
+    int segmentIndex,
+  ) {
+    _streamController.add(
+      PolylineEdgeOutEvent(mapId, position, polylineId, segmentIndex),
+    );
   }
 }

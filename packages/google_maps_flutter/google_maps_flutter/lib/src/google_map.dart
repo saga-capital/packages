@@ -749,6 +749,24 @@ class _GoogleMapState extends State<GoogleMap> {
     }
   }
 
+  void onPolylineEdgeEnter(
+    PolylineId polylineId,
+    LatLng position,
+    int segmentIndex,
+  ) {
+    final Polyline? polyline = _polylines[polylineId];
+    polyline?.onMouseOverEdge?.call(position, segmentIndex);
+  }
+
+  void onPolylineEdgeExit(
+    PolylineId polylineId,
+    LatLng position,
+    int segmentIndex,
+  ) {
+    final Polyline? polyline = _polylines[polylineId];
+    polyline?.onMouseOutEdge?.call(position, segmentIndex);
+  }
+
   void onCircleTap(CircleId circleId) {
     final Circle? circle = _circles[circleId];
     if (circle == null) {

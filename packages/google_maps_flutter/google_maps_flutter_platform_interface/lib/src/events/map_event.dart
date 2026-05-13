@@ -154,6 +154,32 @@ class PolylineOutEvent extends _PositionedMapEvent<PolylineId> {
   PolylineOutEvent(super.mapId, super.position, super.polylineId);
 }
 
+/// Fired alongside [PolylineOverEvent] with the index of the edge
+/// (segment between `points[i]` and `points[i+1]`) closest to the cursor.
+class PolylineEdgeOverEvent extends _PositionedMapEvent<PolylineId> {
+  PolylineEdgeOverEvent(
+    super.mapId,
+    super.position,
+    super.polylineId,
+    this.segmentIndex,
+  );
+
+  final int segmentIndex;
+}
+
+/// Fired alongside [PolylineOutEvent] with the index of the edge the cursor
+/// was over at the moment it left the polyline.
+class PolylineEdgeOutEvent extends _PositionedMapEvent<PolylineId> {
+  PolylineEdgeOutEvent(
+    super.mapId,
+    super.position,
+    super.polylineId,
+    this.segmentIndex,
+  );
+
+  final int segmentIndex;
+}
+
 /// An event fired when a [Polygon] is tapped.
 class PolygonTapEvent extends MapEvent<PolygonId> {
   /// Build an PolygonTap Event triggered from the map represented by `mapId`.

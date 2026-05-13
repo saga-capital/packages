@@ -394,6 +394,21 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('onPolylineExit()has not been implemented.');
   }
 
+  /// Edge-aware version of [onPolylineEnter] — includes the index of the
+  /// edge (segment) closest to the cursor.
+  Stream<PolylineEdgeOverEvent> onPolylineEdgeEnter({required int mapId}) {
+    throw UnimplementedError(
+      'onPolylineEdgeEnter() has not been implemented.',
+    );
+  }
+
+  /// Edge-aware version of [onPolylineExit].
+  Stream<PolylineEdgeOutEvent> onPolylineEdgeExit({required int mapId}) {
+    throw UnimplementedError(
+      'onPolylineEdgeExit() has not been implemented.',
+    );
+  }
+
   /// A [Polygon] has been tapped.
   Stream<PolygonTapEvent> onPolygonTap({required int mapId}) {
     throw UnimplementedError('onPolygonTap() has not been implemented.');
