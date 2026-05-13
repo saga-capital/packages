@@ -94,6 +94,15 @@ class PlacePolygonBodyState extends State<PlacePolygonBody> {
       onTap: () {
         _onPolygonTapped(polygonId);
       },
+      // Web-only — fill and stroke colours breathe between two endpoints
+      // every 2.4 s. Other platforms ignore this field.
+      webAnimation: WebPolygonAnimation(
+        fillColorA: Colors.green.withValues(alpha: 0.25),
+        fillColorB: Colors.purple.withValues(alpha: 0.5),
+        strokeColorA: Colors.orange,
+        strokeColorB: Colors.pinkAccent,
+        periodMs: 2400,
+      ),
     );
 
     setState(() {

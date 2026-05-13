@@ -68,6 +68,7 @@ export 'package:google_maps_flutter_platform_interface/google_maps_flutter_platf
         TileProvider,
         WebBadgeAnchor,
         WebCameraControlPosition,
+        WebCircleAnimation,
         WebFlowDirection,
         WebFlowSymbol,
         WebGestureHandling,
@@ -76,7 +77,9 @@ export 'package:google_maps_flutter_platform_interface/google_maps_flutter_platf
         WebMarkerLabel,
         WebMarkerOverlay,
         WebPatternItem,
+        WebPolygonAnimation,
         WebPolylineAnimation,
+        WebZoomTier,
         WeightedLatLng;
 
 part 'src/controller.dart';

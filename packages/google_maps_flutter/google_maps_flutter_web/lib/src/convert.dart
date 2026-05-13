@@ -650,6 +650,18 @@ web.Node? _buildAdvancedMarkerContent(
   if (hasClassName) {
     wrapper.className = overlay.className!;
   }
+  // Rotation is exposed as a CSS custom property so the app can choose what
+  // to rotate. Putting `transform: rotate(...)` on the wrapper would rotate
+  // children too (labels, badges) — usually undesired. Apps reference
+  // `var(--fd-rotate)` on the specific glyph element that should turn.
+  if (overlay.rotation != null) {
+    wrapper.style.setProperty('--fd-rotate', '${overlay.rotation}deg');
+  }
+  // Tag the wrapper so the zoom-tier manager can recover the base className
+  // when re-applying tier classes after a zoom change.
+  if (overlay.zoomTiers != null && overlay.zoomTiers!.isNotEmpty) {
+    wrapper.setAttribute('data-fd-base-class', overlay.className ?? '');
+  }
   if (anchorChild != null) {
     wrapper.appendChild(anchorChild);
   }

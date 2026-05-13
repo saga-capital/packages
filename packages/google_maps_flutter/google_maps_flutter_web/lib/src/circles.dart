@@ -37,7 +37,14 @@ class CirclesController extends GeometryController {
       onTap: () {
         _onCircleTap(circle.circleId);
       },
+      onEnter: () {
+        _onCircleEnter(circle.circleId);
+      },
+      onExit: () {
+        _onCircleExit(circle.circleId);
+      },
     );
+    controller.setAnimation(circle.webAnimation, circle.radius);
     _circleIdToController[circle.circleId] = controller;
   }
 
@@ -50,6 +57,7 @@ class CirclesController extends GeometryController {
     final CircleController? circleController =
         _circleIdToController[circle.circleId];
     circleController?.update(_circleOptionsFromCircle(circle));
+    circleController?.setAnimation(circle.webAnimation, circle.radius);
   }
 
   /// Removes a set of [CircleId]s from the cache.
@@ -70,5 +78,13 @@ class CirclesController extends GeometryController {
     // Comment here: https://github.com/flutter/flutter/issues/64084
     _streamController.add(CircleTapEvent(mapId, circleId));
     return _circleIdToController[circleId]?.consumeTapEvents ?? false;
+  }
+
+  void _onCircleEnter(CircleId circleId) {
+    _streamController.add(CircleEnterEvent(mapId, circleId));
+  }
+
+  void _onCircleExit(CircleId circleId) {
+    _streamController.add(CircleExitEvent(mapId, circleId));
   }
 }

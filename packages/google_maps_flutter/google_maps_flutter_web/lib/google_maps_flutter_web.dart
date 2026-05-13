@@ -7,6 +7,7 @@ library google_maps_flutter_web;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
+import 'dart:math' as math;
 import 'dart:ui_web' as ui_web;
 
 import 'package:collection/collection.dart';
@@ -31,6 +32,7 @@ import 'src/types.dart';
 import 'src/utils.dart';
 
 part 'src/circle.dart';
+part 'src/circle_animation.dart';
 part 'src/circles.dart';
 part 'src/convert.dart';
 part 'src/google_maps_controller.dart';
@@ -44,6 +46,7 @@ part 'src/markers.dart';
 part 'src/overlay.dart';
 part 'src/overlays.dart';
 part 'src/polygon.dart';
+part 'src/polygon_animation.dart';
 part 'src/polygons.dart';
 part 'src/polyline.dart';
 part 'src/polyline_animation.dart';

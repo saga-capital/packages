@@ -364,6 +364,81 @@ class AdvancedMarkersController
     required super.clusterManagersController,
   });
 
+  // Per-map zoom-tier bookkeeping. We register one zoom_changed listener at
+  // most per map, and walk the bindings to refresh the active tier class on
+  // each wrapper element. Bindings are keyed by MarkerId so they survive
+  // marker `update()` calls that replace the content node.
+  final Map<MarkerId, _ZoomTierBinding> _tierBindings =
+      <MarkerId, _ZoomTierBinding>{};
+  StreamSubscription<void>? _zoomSub;
+
+  void _bindTier(Marker marker) {
+    if (marker is! AdvancedMarker) {
+      return;
+    }
+    final WebMarkerOverlay? overlay = marker.webOverlay;
+    final List<WebZoomTier>? tiers = overlay?.zoomTiers;
+    if (overlay == null || tiers == null || tiers.isEmpty) {
+      _tierBindings.remove(marker.markerId);
+      return;
+    }
+    final sorted = List<WebZoomTier>.of(tiers)
+      ..sort((a, b) => b.minZoom.compareTo(a.minZoom));
+    _tierBindings[marker.markerId] = _ZoomTierBinding(
+      baseClassName: overlay.className ?? '',
+      tiers: sorted,
+    );
+    _ensureZoomListener();
+    _applyTier(marker.markerId);
+  }
+
+  void _ensureZoomListener() {
+    if (_zoomSub != null) {
+      return;
+    }
+    _zoomSub = googleMap.onZoomChanged.listen((_) => _applyAllTiers());
+  }
+
+  void _applyAllTiers() {
+    for (final MarkerId id in _tierBindings.keys.toList()) {
+      _applyTier(id);
+    }
+  }
+
+  void _applyTier(MarkerId id) {
+    final _ZoomTierBinding? binding = _tierBindings[id];
+    final MarkerController<gmaps.AdvancedMarkerElement,
+            gmaps.AdvancedMarkerElementOptions>?
+        controller = _markerIdToController[id];
+    final gmaps.AdvancedMarkerElement? marker = controller?.marker;
+    if (binding == null || marker == null) {
+      return;
+    }
+    final web.Node? content = marker.content;
+    if (content == null || !content.isA<web.HTMLElement>()) {
+      return;
+    }
+    final web.HTMLElement wrapper = content as web.HTMLElement;
+    final double zoom = googleMap.isZoomDefined() ? googleMap.zoom.toDouble() : 0;
+    String tierClass = '';
+    for (final WebZoomTier tier in binding.tiers) {
+      if (zoom >= tier.minZoom) {
+        tierClass = tier.className;
+        break;
+      }
+    }
+    final String base = binding.baseClassName;
+    wrapper.className = tierClass.isEmpty ? base : '$base $tierClass'.trim();
+  }
+
+  void _disposeTierBinding(MarkerId id) {
+    _tierBindings.remove(id);
+    if (_tierBindings.isEmpty) {
+      _zoomSub?.cancel();
+      _zoomSub = null;
+    }
+  }
+
   @override
   Future<AdvancedMarkerController> createMarkerController(
     Marker marker,
@@ -375,7 +450,7 @@ class AdvancedMarkersController
     final gmMarker = gmaps.AdvancedMarkerElement(markerOptions);
     gmMarker.setAttribute('id', marker.markerId.value);
 
-    return AdvancedMarkerController(
+    final controller = AdvancedMarkerController(
       marker: gmMarker,
       clusterManagerId: marker.clusterManagerId,
       infoWindow: gmInfoWindow,
@@ -400,5 +475,31 @@ class AdvancedMarkersController
         _onMarkerExit(marker.markerId);
       },
     );
+    _bindTier(marker);
+    return controller;
   }
+
+  @override
+  Future<void> changeMarkers(Set<Marker> markersToChange) async {
+    await super.changeMarkers(markersToChange);
+    for (final Marker marker in markersToChange) {
+      _bindTier(marker);
+    }
+  }
+
+  @override
+  void removeMarkers(Set<MarkerId> markerIdsToRemove) {
+    for (final MarkerId id in markerIdsToRemove) {
+      _disposeTierBinding(id);
+    }
+    super.removeMarkers(markerIdsToRemove);
+  }
+}
+
+class _ZoomTierBinding {
+  _ZoomTierBinding({required this.baseClassName, required this.tiers});
+
+  final String baseClassName;
+  // Sorted descending by minZoom — first match wins in [_applyTier].
+  final List<WebZoomTier> tiers;
 }

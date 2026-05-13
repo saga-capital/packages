@@ -33,6 +33,9 @@ class PlaceCircleBodyState extends State<PlaceCircleBody> {
   Map<CircleId, Circle> circles = <CircleId, Circle>{};
   int _circleIdCounter = 1;
   CircleId? selectedCircle;
+  // Tracks circles the mouse is currently inside, fed by onEnter/onExit on
+  // the Circle. Used to fade fill color while hovered (CSS-free hit-test).
+  final Set<CircleId> _hoveredCircles = <CircleId>{};
 
   // Values when toggling circle color
   int fillColorsIndex = 0;
@@ -97,6 +100,19 @@ class PlaceCircleBodyState extends State<PlaceCircleBody> {
       onTap: () {
         _onCircleTapped(circleId);
       },
+      // Web-only — mouse hover support and breathing-radius animation.
+      // Other platforms ignore both fields.
+      onEnter: () {
+        setState(() => _hoveredCircles.add(circleId));
+      },
+      onExit: () {
+        setState(() => _hoveredCircles.remove(circleId));
+      },
+      webAnimation: const WebCircleAnimation(
+        minRadiusPercent: 95,
+        maxRadiusPercent: 115,
+        periodMs: 1800,
+      ),
     );
 
     setState(() {
@@ -154,7 +170,17 @@ class PlaceCircleBodyState extends State<PlaceCircleBody> {
                 target: LatLng(52.4478, -3.5402),
                 zoom: 7.0,
               ),
-              circles: Set<Circle>.of(circles.values),
+              circles: <Circle>{
+                for (final Circle c in circles.values)
+                  _hoveredCircles.contains(c.circleId)
+                      ? c.copyWith(
+                          fillColorParam: Colors.amberAccent.withValues(
+                            alpha: 0.7,
+                          ),
+                          strokeWidthParam: 8,
+                        )
+                      : c,
+              },
               onMapCreated: _onMapCreated,
             ),
           ),

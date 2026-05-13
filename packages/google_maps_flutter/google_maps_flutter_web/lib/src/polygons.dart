@@ -47,6 +47,7 @@ class PolygonsController extends GeometryController {
         _onPolygonExit(polygon.polygonId);
       },
     );
+    controller.setAnimation(polygon.webAnimation);
     _polygonIdToController[polygon.polygonId] = controller;
   }
 
@@ -59,6 +60,7 @@ class PolygonsController extends GeometryController {
     final PolygonController? polygonController =
         _polygonIdToController[polygon.polygonId];
     polygonController?.update(_polygonOptionsFromPolygon(googleMap, polygon));
+    polygonController?.setAnimation(polygon.webAnimation);
   }
 
   /// Removes a set of [PolygonId]s from the cache.

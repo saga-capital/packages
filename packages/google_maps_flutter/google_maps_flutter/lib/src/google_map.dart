@@ -760,6 +760,26 @@ class _GoogleMapState extends State<GoogleMap> {
     }
   }
 
+  void onCircleEnter(CircleId circleId) {
+    final Circle? circle = _circles[circleId];
+    if (circle != null) {
+      final VoidCallback? onEnter = circle.onEnter;
+      if (onEnter != null) {
+        onEnter();
+      }
+    }
+  }
+
+  void onCircleExit(CircleId circleId) {
+    final Circle? circle = _circles[circleId];
+    if (circle != null) {
+      final VoidCallback? onExit = circle.onExit;
+      if (onExit != null) {
+        onExit();
+      }
+    }
+  }
+
   void onGroundOverlayTap(GroundOverlayId groundOverlayId) {
     final GroundOverlay? groundOverlay = _groundOverlays[groundOverlayId];
     if (groundOverlay == null) {

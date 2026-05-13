@@ -83,6 +83,27 @@ class WebMarkerBadge {
   int get hashCode => Object.hash(text, color, anchor, className);
 }
 
+/// A single zoom-class tier used by [WebMarkerOverlay.zoomTiers]. When the
+/// current map zoom is greater than or equal to [minZoom], [className] is
+/// appended to the marker wrapper's CSS class list. The active tier is the
+/// one with the highest matching [minZoom].
+@immutable
+class WebZoomTier {
+  const WebZoomTier({required this.minZoom, required this.className});
+
+  final double minZoom;
+  final String className;
+
+  @override
+  bool operator ==(Object other) =>
+      other is WebZoomTier &&
+      other.minZoom == minZoom &&
+      other.className == className;
+
+  @override
+  int get hashCode => Object.hash(minZoom, className);
+}
+
 /// Web-only DOM overlay composed on top of an Advanced Marker icon.
 ///
 /// Mobile platforms ignore this field. Bake any label or badge directly into
@@ -96,6 +117,8 @@ class WebMarkerOverlay {
     this.label,
     this.badge,
     this.className,
+    this.rotation,
+    this.zoomTiers,
   });
 
   final WebMarkerLabel? label;
@@ -104,13 +127,50 @@ class WebMarkerOverlay {
   /// CSS class applied to the marker wrapper element.
   final String? className;
 
-  @override
-  bool operator ==(Object other) =>
-      other is WebMarkerOverlay &&
-      other.label == label &&
-      other.badge == badge &&
-      other.className == className;
+  /// Rotation in degrees exposed to the marker wrapper as the
+  /// `--fd-rotate` CSS custom property. Application stylesheets reference
+  /// `var(--fd-rotate)` on the specific glyph that should turn (e.g. an
+  /// `::before` chevron), keeping labels and badges upright.
+  final double? rotation;
+
+  /// Zoom-tier classes appended to the wrapper based on the current map
+  /// zoom level. The plugin tracks zoom changes and re-applies the highest
+  /// matching tier without requiring app code to wire `onCameraMove`.
+  final List<WebZoomTier>? zoomTiers;
 
   @override
-  int get hashCode => Object.hash(label, badge, className);
+  bool operator ==(Object other) {
+    if (other is! WebMarkerOverlay) {
+      return false;
+    }
+    final List<WebZoomTier>? a = zoomTiers;
+    final List<WebZoomTier>? b = other.zoomTiers;
+    if (a == null || b == null) {
+      if (a != null || b != null) {
+        return false;
+      }
+    } else {
+      if (a.length != b.length) {
+        return false;
+      }
+      for (int i = 0; i < a.length; i++) {
+        if (a[i] != b[i]) {
+          return false;
+        }
+      }
+    }
+    return other.label == label &&
+        other.badge == badge &&
+        other.className == className &&
+        other.rotation == rotation;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        label,
+        badge,
+        className,
+        rotation,
+        zoomTiers == null ? null : Object.hashAll(zoomTiers!),
+      );
 }

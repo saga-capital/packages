@@ -13,8 +13,9 @@ class PolygonController {
     VoidCallback? onTap,
     VoidCallback? onEnter,
     VoidCallback? onExit,
-  }) : _polygon = polygon,
-       _consumeTapEvents = consumeTapEvents {
+  })  : _polygon = polygon,
+        _consumeTapEvents = consumeTapEvents,
+        _animationHandle = 0 {
     if (onTap != null) {
       polygon.onClick.listen((gmaps.PolyMouseEvent event) {
         onTap.call();
@@ -36,6 +37,26 @@ class PolygonController {
 
   final bool _consumeTapEvents;
 
+  int _animationHandle;
+
+  /// Registers (or replaces) a colour-cycling animation for this polygon.
+  /// Pass null to clear.
+  void setAnimation(WebPolygonAnimation? animation) {
+    if (_animationHandle != 0) {
+      _PolygonAnimationManager.instance.unregister(_animationHandle);
+      _animationHandle = 0;
+    }
+    final gmaps.Polygon? p = _polygon;
+    if (animation == null || p == null) {
+      return;
+    }
+    if (!animation.animatesFill && !animation.animatesStroke) {
+      return;
+    }
+    _animationHandle =
+        _PolygonAnimationManager.instance.register(p, animation);
+  }
+
   /// Returns the wrapped [gmaps.Polygon]. Only used for testing.
   @visibleForTesting
   gmaps.Polygon? get polygon => _polygon;
@@ -53,6 +74,10 @@ class PolygonController {
 
   /// Disposes of the currently wrapped [gmaps.Polygon].
   void remove() {
+    if (_animationHandle != 0) {
+      _PolygonAnimationManager.instance.unregister(_animationHandle);
+      _animationHandle = 0;
+    }
     if (_polygon != null) {
       _polygon!.visible = false;
       _polygon!.map = null;

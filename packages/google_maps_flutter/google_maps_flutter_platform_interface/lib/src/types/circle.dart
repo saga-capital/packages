@@ -32,6 +32,9 @@ class Circle implements MapsObject<Circle> {
     this.visible = true,
     this.zIndex = 0,
     this.onTap,
+    this.onEnter,
+    this.onExit,
+    this.webAnimation,
   });
 
   /// Uniquely identifies a [Circle].
@@ -77,6 +80,15 @@ class Circle implements MapsObject<Circle> {
   /// Callbacks to receive tap events for circle placed on this map.
   final VoidCallback? onTap;
 
+  /// Web-only mouseover callback for this circle.
+  final VoidCallback? onEnter;
+
+  /// Web-only mouseout callback for this circle.
+  final VoidCallback? onExit;
+
+  /// Web-only pulsing-radius animation overlaid on this circle.
+  final WebCircleAnimation? webAnimation;
+
   /// Creates a new [Circle] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
   Circle copyWith({
@@ -89,6 +101,9 @@ class Circle implements MapsObject<Circle> {
     bool? visibleParam,
     int? zIndexParam,
     VoidCallback? onTapParam,
+    VoidCallback? onEnterParam,
+    VoidCallback? onExitParam,
+    WebCircleAnimation? webAnimationParam,
   }) {
     return Circle(
       circleId: circleId,
@@ -101,6 +116,9 @@ class Circle implements MapsObject<Circle> {
       visible: visibleParam ?? visible,
       zIndex: zIndexParam ?? zIndex,
       onTap: onTapParam ?? onTap,
+      onEnter: onEnterParam ?? onEnter,
+      onExit: onExitParam ?? onExit,
+      webAnimation: webAnimationParam ?? webAnimation,
     );
   }
 
@@ -149,7 +167,8 @@ class Circle implements MapsObject<Circle> {
         strokeColor == other.strokeColor &&
         strokeWidth == other.strokeWidth &&
         visible == other.visible &&
-        zIndex == other.zIndex;
+        zIndex == other.zIndex &&
+        webAnimation == other.webAnimation;
   }
 
   @override

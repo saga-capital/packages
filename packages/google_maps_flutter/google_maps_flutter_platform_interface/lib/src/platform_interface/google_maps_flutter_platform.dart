@@ -414,6 +414,16 @@ abstract class GoogleMapsFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('onCircleTap() has not been implemented.');
   }
 
+  /// A [Circle] has been entered by the mouse pointer.
+  Stream<CircleEnterEvent> onCircleEnter({required int mapId}) {
+    throw UnimplementedError('onCircleEnter() has not been implemented.');
+  }
+
+  /// A [Circle] has been exited by the mouse pointer.
+  Stream<CircleExitEvent> onCircleExit({required int mapId}) {
+    throw UnimplementedError('onCircleExit() has not been implemented.');
+  }
+
   /// A Map has been tapped at a certain [LatLng].
   Stream<MapTapEvent> onTap({required int mapId}) {
     throw UnimplementedError('onTap() has not been implemented.');

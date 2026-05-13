@@ -178,6 +178,14 @@ class CircleTapEvent extends MapEvent<CircleId> {
   CircleTapEvent(super.mapId, super.circleId);
 }
 
+class CircleEnterEvent extends MapEvent<CircleId> {
+  CircleEnterEvent(super.mapId, super.circleId);
+}
+
+class CircleExitEvent extends MapEvent<CircleId> {
+  CircleExitEvent(super.mapId, super.circleId);
+}
+
 /// An event fired when a [GroundOverlay] is tapped.
 class GroundOverlayTapEvent extends MapEvent<GroundOverlayId> {
   /// Build a GroundOverlayTap Event triggered from the map represented by `mapId`.

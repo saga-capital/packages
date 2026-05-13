@@ -11,18 +11,45 @@ class CircleController {
     required gmaps.Circle circle,
     bool consumeTapEvents = false,
     VoidCallback? onTap,
-  }) : _circle = circle,
-       _consumeTapEvents = consumeTapEvents {
+    VoidCallback? onEnter,
+    VoidCallback? onExit,
+  })  : _circle = circle,
+        _consumeTapEvents = consumeTapEvents,
+        _animationHandle = 0 {
     if (onTap != null) {
-      circle.onClick.listen((_) {
-        onTap.call();
-      });
+      _subscriptions.add(circle.onClick.listen((_) => onTap.call()));
+    }
+    if (onEnter != null) {
+      _subscriptions.add(circle.onMouseover.listen((_) => onEnter.call()));
+    }
+    if (onExit != null) {
+      _subscriptions.add(circle.onMouseout.listen((_) => onExit.call()));
     }
   }
 
   gmaps.Circle? _circle;
 
   final bool _consumeTapEvents;
+
+  final List<StreamSubscription<dynamic>> _subscriptions =
+      <StreamSubscription<dynamic>>[];
+
+  int _animationHandle;
+
+  /// Registers (or replaces) a breathing-radius animation for this circle.
+  /// Pass null to clear.
+  void setAnimation(WebCircleAnimation? animation, double baseRadius) {
+    if (_animationHandle != 0) {
+      _CircleAnimationManager.instance.unregister(_animationHandle);
+      _animationHandle = 0;
+    }
+    final gmaps.Circle? c = _circle;
+    if (animation == null || c == null || baseRadius <= 0) {
+      return;
+    }
+    _animationHandle =
+        _CircleAnimationManager.instance.register(c, animation, baseRadius);
+  }
 
   /// Returns the wrapped [gmaps.Circle]. Only used for testing.
   @visibleForTesting
@@ -41,11 +68,19 @@ class CircleController {
 
   /// Disposes of the currently wrapped [gmaps.Circle].
   void remove() {
+    if (_animationHandle != 0) {
+      _CircleAnimationManager.instance.unregister(_animationHandle);
+      _animationHandle = 0;
+    }
     if (_circle != null) {
       _circle!.visible = false;
       _circle!.radius = 0;
       _circle!.map = null;
       _circle = null;
     }
+    for (final StreamSubscription<dynamic> sub in _subscriptions) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
   }
 }

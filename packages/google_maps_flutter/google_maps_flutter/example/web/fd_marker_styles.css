@@ -242,12 +242,14 @@
   cursor: pointer;
 }
 
+/* Hidden by default; `.fd-zoom.is-near` (set by the plugin's zoom-tier
+   manager once the threshold is crossed) reveals the label. */
 .fd-zoom__label {
   position: absolute !important;
   left: 50% !important;
   bottom: 28px !important;
   top: auto !important;
-  transform: translateX(-50%) !important;
+  transform: translateX(-50%) translateY(6px) !important;
   display: block;
   padding: 6px 10px;
   border-radius: 8px;
@@ -261,14 +263,13 @@
   text-align: center;
   pointer-events: none;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  opacity: 1;
+  opacity: 0;
   transition: opacity 0.25s ease-out, transform 0.25s ease-out;
 }
 
-.fd-zoom.is-far .fd-zoom__label {
-  opacity: 0;
-  transform: translateX(-50%) translateY(6px) !important;
-  pointer-events: none;
+.fd-zoom.is-near .fd-zoom__label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) !important;
 }
 
 /* ==================================================================
@@ -279,6 +280,8 @@
    vehicle rather than a teleporting dot.
    ================================================================== */
 
+/* Bob uses `top` (not `transform`) so the inline `transform: rotate(deg)`
+   that the plugin writes for heading rotation doesn't clobber it. */
 .fd-courier {
   width: 22px;
   height: 22px;
@@ -289,12 +292,34 @@
     0 6px 12px rgba(0, 0, 0, 0.35);
   animation: fd-courier-bob 1.1s ease-in-out infinite;
   position: relative;
+  top: 0;
   transition:
     background 0.4s ease-out,
     box-shadow 0.4s ease-out,
-    transform 0.18s ease-out,
     width 0.25s ease-out,
     height 0.25s ease-out;
+}
+
+/* Chevron pointing forward. Rotation comes from the plugin-set
+   `--fd-rotate` CSS variable, so only this glyph turns — the label
+   sibling stays upright. */
+.fd-courier::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 9px solid white;
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--fd-rotate, 0deg))
+    translateX(2px);
+  transform-origin: center;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Soft motion-trail behind the dot for a sense of speed. The colour is
@@ -359,8 +384,8 @@
 }
 
 @keyframes fd-courier-bob {
-  0%, 100% { transform: translateY(0)    scale(1); }
-  50%      { transform: translateY(-2px) scale(1.05); }
+  0%, 100% { top: 0; }
+  50%      { top: -3px; }
 }
 
 .fd-courier__label {

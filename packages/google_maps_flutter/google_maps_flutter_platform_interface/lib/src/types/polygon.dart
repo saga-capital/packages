@@ -37,6 +37,7 @@ class Polygon implements MapsObject<Polygon> {
     this.onTap,
     this.onEnter,
     this.onExit,
+    this.webAnimation,
   });
 
   /// Uniquely identifies a [Polygon].
@@ -103,6 +104,9 @@ class Polygon implements MapsObject<Polygon> {
 
   final VoidCallback? onExit;
 
+  /// Web-only colour-cycling animation overlaid on this polygon.
+  final WebPolygonAnimation? webAnimation;
+
 
   /// Creates a new [Polygon] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
@@ -120,6 +124,7 @@ class Polygon implements MapsObject<Polygon> {
     VoidCallback? onEnterParam,
     VoidCallback? onExitParam,
     bool? clickableParam,
+    WebPolygonAnimation? webAnimationParam,
   }) {
     return Polygon(
       polygonId: polygonId,
@@ -136,6 +141,7 @@ class Polygon implements MapsObject<Polygon> {
       onExit: onExitParam ?? onExit,
       zIndex: zIndexParam ?? zIndex,
       clickable: clickableParam ?? clickable,
+      webAnimation: webAnimationParam ?? webAnimation,
     );
   }
 
@@ -190,7 +196,8 @@ class Polygon implements MapsObject<Polygon> {
         visible == other.visible &&
         strokeColor == other.strokeColor &&
         strokeWidth == other.strokeWidth &&
-        zIndex == other.zIndex;
+        zIndex == other.zIndex &&
+        webAnimation == other.webAnimation;
   }
 
   @override

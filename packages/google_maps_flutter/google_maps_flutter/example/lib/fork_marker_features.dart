@@ -5,6 +5,7 @@
 // ignore_for_file: public_member_api_docs
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -98,7 +99,6 @@ class _ForkMarkerFeaturesBodyState extends State<_ForkMarkerFeaturesBody> {
 
   MarkerId? _hoveredId;
   MarkerId? _selectedId;
-  double _zoom = 13;
   static const double _zoomLabelThreshold = 13.5;
 
   static const LatLng _truckPos = LatLng(59.9210, 10.7390);
@@ -119,6 +119,11 @@ class _ForkMarkerFeaturesBodyState extends State<_ForkMarkerFeaturesBody> {
   int _courierSeg = 0;
   double _courierT = 0;
   LatLng _courierPos = _courierRoute.first;
+  double _courierHeading = 0;
+  // Rolling buffer of the courier's recent positions, used as a polyline
+  // trail behind the marker. Length caps the visible tail length.
+  static const int _trailMax = 80;
+  final List<LatLng> _courierTrail = <LatLng>[];
 
   @override
   void initState() {
@@ -133,7 +138,21 @@ class _ForkMarkerFeaturesBodyState extends State<_ForkMarkerFeaturesBody> {
       final LatLng b = _courierRoute[(_courierSeg + 1) % _courierRoute.length];
       final double lat = a.latitude + (b.latitude - a.latitude) * _courierT;
       final double lng = a.longitude + (b.longitude - a.longitude) * _courierT;
-      setState(() => _courierPos = LatLng(lat, lng));
+      // Heading is the bearing of the current segment. Map screen-X is
+      // longitude, screen-Y is latitude (inverted). atan2(dLng, -dLat)
+      // gives 0° pointing north, 90° east, etc.
+      final double heading =
+          math.atan2(b.longitude - a.longitude, -(b.latitude - a.latitude)) *
+              180 /
+              math.pi;
+      setState(() {
+        _courierPos = LatLng(lat, lng);
+        _courierHeading = heading;
+        _courierTrail.add(_courierPos);
+        if (_courierTrail.length > _trailMax) {
+          _courierTrail.removeAt(0);
+        }
+      });
     });
   }
 
@@ -249,22 +268,29 @@ class _ForkMarkerFeaturesBodyState extends State<_ForkMarkerFeaturesBody> {
           ),
           className:
               'fd-courier fd-courier--$segName${sprint ? ' is-sprint' : ''}',
+          // Rotation follows segment bearing — chevron inside the dot
+          // points the direction of travel.
+          rotation: _courierHeading,
         ),
       ),
     );
 
-    // Zoom-aware marker — `is-far` toggles label visibility from CSS.
-    final bool labelOn = _zoom >= _zoomLabelThreshold;
+    // Zoom-aware marker — plugin watches map.zoom_changed and appends the
+    // `is-near` class once the threshold is crossed. App code stays free of
+    // any onCameraMove plumbing.
     out.add(
       AdvancedMarker(
         markerId: const MarkerId('zoom'),
         position: _zoomMarkerPos,
-        webOverlay: WebMarkerOverlay(
-          label: const WebMarkerLabel(
+        webOverlay: const WebMarkerOverlay(
+          label: WebMarkerLabel(
             text: 'Stop #7\nzoom in to see me',
             className: 'fd-zoom__label',
           ),
-          className: 'fd-zoom${labelOn ? '' : ' is-far'}',
+          className: 'fd-zoom',
+          zoomTiers: <WebZoomTier>[
+            WebZoomTier(minZoom: _zoomLabelThreshold, className: 'is-near'),
+          ],
         ),
       ),
     );
@@ -299,10 +325,9 @@ class _ForkMarkerFeaturesBodyState extends State<_ForkMarkerFeaturesBody> {
       title: 'AdvancedMarker + webOverlay',
       caption:
           'Pill cards · pulse · hover lift · gold ring on tap · '
-          'truck pin reveals label on hover · zoom-aware label '
-          '(z≥${_zoomLabelThreshold.toStringAsFixed(1)}, '
-          'now ${_zoom.toStringAsFixed(2)}) · '
-          'purple courier loops via Timer.periodic',
+          'truck pin reveals label on hover · zoom-aware label via '
+          'WebZoomTier (z≥${_zoomLabelThreshold.toStringAsFixed(1)}) · '
+          'courier rotates with heading and leaves a flowing trail',
       map: GoogleMap(
         mapId: widget.mapId,
         markerType: GoogleMapMarkerType.advancedMarker,
@@ -310,18 +335,33 @@ class _ForkMarkerFeaturesBodyState extends State<_ForkMarkerFeaturesBody> {
           target: _center,
           zoom: 13,
         ),
-        onCameraMove: (CameraPosition pos) {
-          final bool wasOn = _zoom >= _zoomLabelThreshold;
-          final bool nowOn = pos.zoom >= _zoomLabelThreshold;
-          if (wasOn != nowOn) {
-            setState(() => _zoom = pos.zoom);
-          } else {
-            _zoom = pos.zoom;
-          }
-        },
         markers: _buildAdvancedMarkers(),
+        polylines: _buildCourierTrail(),
       ),
     );
+  }
+
+  /// Trail rendered behind the moving courier. Translucent purple base line
+  /// for the visited path; tiny flowing arrows on top show direction. The
+  /// list is short-lived (cap [_trailMax]) so the tail fades naturally as
+  /// older points roll off.
+  Set<Polyline> _buildCourierTrail() {
+    if (_courierTrail.length < 2) {
+      return const <Polyline>{};
+    }
+    return <Polyline>{
+      Polyline(
+        polylineId: const PolylineId('courier-trail'),
+        points: List<LatLng>.of(_courierTrail),
+        color: const Color(0x556d28d9),
+        width: 6,
+        webAnimation: const WebPolylineAnimation(
+          speedPercentPerSecond: 20,
+          size: 3,
+          color: Color(0xFF6d28d9),
+        ),
+      ),
+    };
   }
 
   @override
