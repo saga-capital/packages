@@ -40,6 +40,8 @@ import 'tile_overlay.dart';
 const String? _mapId = '3994be900ec44bda4dc0a98a';
 
 final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
+  const ForkMarkerFeaturesPage(mapId: _mapId),
+  const ForkPolylineAnimationPage(),
   const MapUiPage(),
   const MapCoordinatesPage(),
   const MapClickPage(),
@@ -63,8 +65,6 @@ final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
   const MapIdPage(),
   const HeatmapPage(),
   const AdvancedMarkerCollisionBehaviorPage(mapId: _mapId),
-  const ForkMarkerFeaturesPage(mapId: _mapId),
-  const ForkPolylineAnimationPage(),
 ];
 
 /// MapsDemo is the Main Application.
