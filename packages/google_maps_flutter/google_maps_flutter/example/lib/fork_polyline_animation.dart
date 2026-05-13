@@ -76,10 +76,25 @@ class _ForkPolylineAnimationBodyState
     LatLng(59.9050, 10.7400),
     LatLng(59.9020, 10.7600),
   ];
+  // Long, undulating route used to showcase the SVG gradient overlay.
+  static const List<LatLng> _route6 = <LatLng>[
+    LatLng(59.8980, 10.7080),
+    LatLng(59.9020, 10.7220),
+    LatLng(59.9080, 10.7360),
+    LatLng(59.9140, 10.7500),
+    LatLng(59.9210, 10.7640),
+    LatLng(59.9290, 10.7790),
+    LatLng(59.9360, 10.7920),
+  ];
 
   bool _running = true;
   bool _reversed = false;
   double _speedMul = 1.0;
+
+  // Hover-segment demo state — set when the cursor enters polyline `p6`'s
+  // hit area, cleared on exit. Drives the bright overlay polyline that
+  // highlights the closest edge.
+  int? _hoveredSegmentIndex;
 
   WebFlowDirection _dir(WebFlowDirection base) {
     if (!_reversed) {
@@ -186,6 +201,68 @@ class _ForkPolylineAnimationBodyState
           ),
         ),
       ),
+      // Gradient stroke demo — SVG OverlayView paints a rainbow along
+      // the projected path. The underlying gmaps polyline becomes
+      // transparent so the SVG carries the visuals but its hit geometry
+      // is unchanged, which is what powers the onMouseOverEdge /
+      // onMouseOutEdge callbacks below. Animation slides the stops along
+      // the path at ~25% per second with the pattern tiling 4 times
+      // across the line for a marching-rainbow effect.
+      Polyline(
+        polylineId: const PolylineId('p6'),
+        points: _route6,
+        width: 8,
+        color: const Color(0xFF000000),
+        zIndex: 5,
+        consumeTapEvents: true,
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gradient polyline tapped'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        },
+        onMouseOverEdge: (LatLng pos, int idx) {
+          if (idx != _hoveredSegmentIndex) {
+            setState(() => _hoveredSegmentIndex = idx);
+          }
+        },
+        onMouseOutEdge: (LatLng pos, int idx) {
+          if (_hoveredSegmentIndex != null) {
+            setState(() => _hoveredSegmentIndex = null);
+          }
+        },
+        webGradient: WebPolylineGradient(
+          stops: const <Color>[
+            Color(0xFFEF4444),
+            Color(0xFFF59E0B),
+            Color(0xFF10B981),
+            Color(0xFF3B82F6),
+            Color(0xFF8B5CF6),
+            Color(0xFFEF4444),
+          ],
+          strokeWidth: 8,
+          repeatCount: 4,
+          animationSpeedPercentPerSecond: _running ? 25 * _speedMul : null,
+        ),
+      ),
+      // Hover overlay — a separate, thicker, opaque polyline drawn over
+      // just the segment closest to the cursor. Built from the same
+      // _route6 points so it lines up exactly with the gradient layer
+      // beneath it. zIndex above p6 so it visually wins.
+      if (_hoveredSegmentIndex != null &&
+          _hoveredSegmentIndex! + 1 < _route6.length)
+        Polyline(
+          polylineId: const PolylineId('p6-hover'),
+          points: <LatLng>[
+            _route6[_hoveredSegmentIndex!],
+            _route6[_hoveredSegmentIndex! + 1],
+          ],
+          color: const Color(0xFFFFEB3B),
+          width: 14,
+          zIndex: 6,
+        ),
     };
   }
 

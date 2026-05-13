@@ -76,9 +76,13 @@ export 'package:google_maps_flutter_platform_interface/google_maps_flutter_platf
         WebMarkerBadge,
         WebMarkerLabel,
         WebMarkerOverlay,
+        WebOverlayPane,
         WebPatternItem,
         WebPolygonAnimation,
         WebPolylineAnimation,
+        WebPolylineGradient,
+        WebStrokeLinecap,
+        WebStrokeLinejoin,
         WebZoomTier,
         WeightedLatLng;
 

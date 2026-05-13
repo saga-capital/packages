@@ -42,6 +42,7 @@ class Polyline implements MapsObject<Polyline> {
     this.onMouseOverEdge,
     this.onMouseOutEdge,
     this.webAnimation,
+    this.webGradient,
   });
 
   /// Uniquely identifies a [Polyline].
@@ -139,6 +140,10 @@ class Polyline implements MapsObject<Polyline> {
   /// via google.maps IconSequence. Mobile ignores this field.
   final WebPolylineAnimation? webAnimation;
 
+  /// Web-only gradient stroke overlay rendered via SVG on top of the
+  /// (transparent) gmaps polyline. Mobile ignores this field.
+  final WebPolylineGradient? webGradient;
+
   /// Creates a new [Polyline] object whose values are the same as this instance,
   /// unless overwritten by the specified parameters.
   Polyline copyWith({
@@ -159,6 +164,7 @@ class Polyline implements MapsObject<Polyline> {
     void Function(LatLng, int)? onMouseOverEdgeParam,
     void Function(LatLng, int)? onMouseOutEdgeParam,
     WebPolylineAnimation? webAnimationParam,
+    WebPolylineGradient? webGradientParam,
   }) {
     return Polyline(
       polylineId: polylineId,
@@ -179,6 +185,7 @@ class Polyline implements MapsObject<Polyline> {
       onMouseOverEdge: onMouseOverEdgeParam ?? onMouseOverEdge,
       onMouseOutEdge: onMouseOutEdgeParam ?? onMouseOutEdge,
       webAnimation: webAnimationParam ?? webAnimation,
+      webGradient: webGradientParam ?? webGradient,
     );
   }
 
@@ -243,6 +250,7 @@ class Polyline implements MapsObject<Polyline> {
         width == other.width &&
         zIndex == other.zIndex &&
         webAnimation == other.webAnimation &&
+        webGradient == other.webGradient &&
         onMouseOverEdge == other.onMouseOverEdge &&
         onMouseOutEdge == other.onMouseOutEdge;
   }

@@ -55,6 +55,13 @@ class PolylinesController extends GeometryController {
       },
     );
     controller.setAnimation(polyline.webAnimation, polyline.color);
+    controller.setGradient(
+      polyline.webGradient,
+      polyline.points,
+      polyline.width.toDouble(),
+      polyline.zIndex,
+      googleMap,
+    );
     _polylineIdToController[polyline.polylineId] = controller;
   }
 
@@ -71,6 +78,13 @@ class PolylinesController extends GeometryController {
     );
     polylineController?.setPoints(polyline.points);
     polylineController?.setAnimation(polyline.webAnimation, polyline.color);
+    polylineController?.setGradient(
+      polyline.webGradient,
+      polyline.points,
+      polyline.width.toDouble(),
+      polyline.zIndex,
+      googleMap,
+    );
   }
 
   /// Removes a set of [PolylineId]s from the cache.

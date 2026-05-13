@@ -1091,11 +1091,16 @@ gmaps.PolylineOptions _polylineOptionsFromPolyline(
       .toList();
 
   final List<gmaps.IconSequence>? icons = _getIconSequences(polyline);
+  // When an SVG gradient overlay carries the visuals, the underlying
+  // gmaps stroke must stay transparent. Hit testing on the gmaps polyline
+  // is unaffected — clickable still uses path geometry, so mouseover /
+  // click events fire as usual.
+  final bool hasGradient = polyline.webGradient != null;
   return gmaps.PolylineOptions()
     ..path = paths.toJS
     ..strokeWeight = polyline.width
     ..strokeColor = _getCssColor(polyline.color)
-    ..strokeOpacity = _getCssOpacity(polyline.color)
+    ..strokeOpacity = hasGradient ? 0 : _getCssOpacity(polyline.color)
     ..visible = polyline.visible
     ..zIndex = polyline.zIndex
     ..icons = icons

@@ -62,6 +62,47 @@ class PolylineController {
 
   int _animationHandle;
 
+  _PolylineGradientOverlay? _gradient;
+
+  /// Registers (or replaces) a gradient stroke overlay on this polyline.
+  /// When [gradient] is set, the underlying gmaps polyline's stroke
+  /// becomes transparent so only the SVG layer is visible. When [gradient]
+  /// is null the gmaps polyline becomes visible again (caller is expected
+  /// to push fresh options via [update]).
+  void setGradient(
+    WebPolylineGradient? gradient,
+    List<LatLng> points,
+    double strokeWidth,
+    int zIndex,
+    gmaps.Map map,
+  ) {
+    final gmaps.Polyline? p = _polyline;
+    if (p == null) {
+      return;
+    }
+    if (gradient == null) {
+      _gradient?.detach();
+      _gradient = null;
+      return;
+    }
+    final _PolylineGradientOverlay? existing = _gradient;
+    if (existing != null &&
+        existing.gradient == gradient &&
+        existing.zIndex == zIndex) {
+      existing.setPoints(points);
+      return;
+    }
+    existing?.detach();
+    final overlay = _PolylineGradientOverlay(
+      gradient: gradient,
+      strokeWidth: gradient.strokeWidth ?? strokeWidth,
+      zIndex: zIndex,
+      points: points,
+    );
+    overlay.attach(map);
+    _gradient = overlay;
+  }
+
   /// Registers (or replaces) a flowing-symbol animation for this polyline.
   /// Pass null to clear.
   void setAnimation(WebPolylineAnimation? animation, Color polylineColor) {
@@ -104,6 +145,8 @@ class PolylineController {
       _PolylineAnimationManager.instance.unregister(_animationHandle);
       _animationHandle = 0;
     }
+    _gradient?.detach();
+    _gradient = null;
     if (_polyline != null) {
       _polyline!.visible = false;
       _polyline!.map = null;

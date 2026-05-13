@@ -15,6 +15,7 @@ import 'clustering.dart';
 import 'collision_behavior.dart';
 import 'fork_marker_features.dart';
 import 'fork_polyline_animation.dart';
+import 'fork_polyline_gradient_perf.dart';
 import 'ground_overlay.dart';
 import 'heatmap.dart';
 import 'lite_mode.dart';
@@ -52,6 +53,7 @@ const String? _mapId = bool.hasEnvironment('GMAPS_MAP_ID')
 final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
   const ForkMarkerFeaturesPage(mapId: _mapId),
   const ForkPolylineAnimationPage(),
+  const ForkPolylineGradientPerfPage(),
   const MapUiPage(),
   const MapCoordinatesPage(),
   const MapClickPage(),

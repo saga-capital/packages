@@ -50,4 +50,5 @@ part 'src/polygon_animation.dart';
 part 'src/polygons.dart';
 part 'src/polyline.dart';
 part 'src/polyline_animation.dart';
+part 'src/polyline_gradient.dart';
 part 'src/polylines.dart';

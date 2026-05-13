@@ -52,3 +52,4 @@ export 'web_circle_animation.dart';
 export 'web_marker_overlay.dart';
 export 'web_polygon_animation.dart';
 export 'web_polyline_animation.dart';
+export 'web_polyline_gradient.dart';
