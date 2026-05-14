@@ -372,7 +372,7 @@ class AdvancedMarkersController
       <MarkerId, _ZoomTierBinding>{};
   StreamSubscription<void>? _zoomSub;
 
-  void _bindTier(Marker marker) {
+  void _bindTier(Marker marker, {gmaps.AdvancedMarkerElement? element}) {
     if (marker is! AdvancedMarker) {
       return;
     }
@@ -389,7 +389,7 @@ class AdvancedMarkersController
       tiers: sorted,
     );
     _ensureZoomListener();
-    _applyTier(marker.markerId);
+    _applyTier(marker.markerId, element: element);
   }
 
   void _ensureZoomListener() {
@@ -405,12 +405,10 @@ class AdvancedMarkersController
     }
   }
 
-  void _applyTier(MarkerId id) {
+  void _applyTier(MarkerId id, {gmaps.AdvancedMarkerElement? element}) {
     final _ZoomTierBinding? binding = _tierBindings[id];
-    final MarkerController<gmaps.AdvancedMarkerElement,
-            gmaps.AdvancedMarkerElementOptions>?
-        controller = _markerIdToController[id];
-    final gmaps.AdvancedMarkerElement? marker = controller?.marker;
+    final gmaps.AdvancedMarkerElement? marker =
+        element ?? _markerIdToController[id]?.marker;
     if (binding == null || marker == null) {
       return;
     }
@@ -475,7 +473,7 @@ class AdvancedMarkersController
         _onMarkerExit(marker.markerId);
       },
     );
-    _bindTier(marker);
+    _bindTier(marker, element: gmMarker);
     return controller;
   }
 
