@@ -408,3 +408,100 @@
   pointer-events: none;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
+
+/* --------------------------------------------------------------------------
+   anchorPx demo — fixed-size square with a coloured dot painted at the
+   anchor pixel (via ::after positioned to top/left/right/bottom). Dot lands
+   exactly on (lat, lng) when anchorPx is set correctly.
+   -------------------------------------------------------------------------- */
+.fd-anchor-demo {
+  width: 80px;
+  height: 80px;
+  /* Use `outline` instead of `border` so the dashed frame paints over the
+     box without occupying layout space. Otherwise box-sizing: border-box
+     would push the right/bottom-anchored dot 2px inside the visible edge
+     and the dot would miss the lat/lng by the border width. */
+  outline: 2px dashed rgba(17, 24, 39, 0.5);
+  outline-offset: -2px;
+  background: rgba(255, 255, 255, 0.7);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 10px;
+  color: #111827;
+  /* Allow hover for the framework demo. Pointer events bubble through the
+     wrapper but the inner dot/label still won't capture them. */
+  pointer-events: auto;
+  /* Pivot every transform around the lat/lng pixel published by the plugin
+     as `--fd-anchor-x` / `--fd-anchor-y`. On hover the box scales but the
+     coloured anchor dot stays glued to the polyline crossing. */
+  transform-origin: var(--fd-anchor-x) var(--fd-anchor-y);
+  transition: transform 180ms ease-out, background 180ms ease-out;
+}
+.fd-anchor-demo:hover {
+  transform: scale(1.25);
+  background: rgba(255, 255, 255, 0.9);
+}
+.fd-anchor-demo__label {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  white-space: pre;
+  line-height: 1.2;
+  font-weight: 600;
+}
+/* The coloured anchor dot — 10px disc centred on the wrapper coordinate the
+   marker's anchorPx names. Each variant pins the dot to a different corner
+   or the centre. */
+.fd-anchor-demo::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+.fd-anchor-demo--center::after {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #dc2626; /* red */
+}
+.fd-anchor-demo--topleft::after {
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%);
+  background: #16a34a; /* green */
+}
+.fd-anchor-demo--bottomright::after {
+  right: 0;
+  bottom: 0;
+  transform: translate(50%, 50%);
+  background: #2563eb; /* blue */
+}
+
+/* --------------------------------------------------------------------------
+   anchorPx demo — teardrop pin variant. The wrapper is exactly 36×52 and
+   carries an inline SVG (data URI) drawn so the path's tip vertex is at the
+   SVG coord (18, 52). Setting AdvancedMarker.anchorPx to (18, 52) puts the
+   tip on lat/lng — classic "pin tip = location".
+   -------------------------------------------------------------------------- */
+.fd-anchor-pin {
+  width: 36px;
+  height: 52px;
+  position: relative;
+  pointer-events: auto;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: 36px 52px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='52' viewBox='0 0 36 52'><path d='M18 52 C 6 36 2 26 2 18 A 16 16 0 1 1 34 18 C 34 26 30 36 18 52 Z' fill='%23f97316' stroke='white' stroke-width='2' stroke-linejoin='round'/><circle cx='18' cy='18' r='5' fill='white'/></svg>");
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  /* Tip-anchored hover: scale grows from anchor pixel (18, 52) — tip stays
+     planted on lat/lng while the rest of the pin expands upward. */
+  transform-origin: var(--fd-anchor-x) var(--fd-anchor-y);
+  transition: transform 200ms ease-out, filter 200ms ease-out;
+}
+.fd-anchor-pin:hover {
+  transform: scale(1.25);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+}

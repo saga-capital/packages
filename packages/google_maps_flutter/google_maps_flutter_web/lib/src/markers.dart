@@ -416,7 +416,18 @@ class AdvancedMarkersController
     if (content == null || !content.isA<web.HTMLElement>()) {
       return;
     }
-    final web.HTMLElement wrapper = content as web.HTMLElement;
+    // When anchorPx is set, [content] is a zero-sized host; the styled
+    // wrapper lives one level down. Walk to the element tagged
+    // `data-fd-wrapper`.
+    final web.HTMLElement root = content as web.HTMLElement;
+    web.HTMLElement wrapper = root;
+    if (!root.hasAttribute('data-fd-wrapper')) {
+      final web.Element? inner = root.querySelector('[data-fd-wrapper]');
+      if (inner == null || !inner.isA<web.HTMLElement>()) {
+        return;
+      }
+      wrapper = inner as web.HTMLElement;
+    }
     final double zoom = googleMap.isZoomDefined() ? googleMap.zoom.toDouble() : 0;
     String tierClass = '';
     for (final WebZoomTier tier in binding.tiers) {

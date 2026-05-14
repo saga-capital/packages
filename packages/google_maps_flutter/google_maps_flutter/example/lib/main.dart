@@ -13,6 +13,7 @@ import 'advanced_markers_clustering.dart';
 import 'animate_camera.dart';
 import 'clustering.dart';
 import 'collision_behavior.dart';
+import 'fork_anchor_px_demo.dart';
 import 'fork_marker_features.dart';
 import 'fork_polyline_animation.dart';
 import 'fork_polyline_gradient_perf.dart';
@@ -52,6 +53,7 @@ const String? _mapId = bool.hasEnvironment('GMAPS_MAP_ID')
 
 final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
   const ForkMarkerFeaturesPage(mapId: _mapId),
+  const ForkAnchorPxDemoPage(mapId: _mapId),
   const ForkPolylineAnimationPage(),
   const ForkPolylineGradientPerfPage(),
   const MapUiPage(),

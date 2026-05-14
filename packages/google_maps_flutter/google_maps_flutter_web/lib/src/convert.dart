@@ -646,7 +646,10 @@ web.Node? _buildAdvancedMarkerContent(
 
   final wrapper = web.document.createElement('div') as web.HTMLDivElement
     ..style.position = 'relative'
-    ..style.display = 'inline-block';
+    ..style.display = 'inline-block'
+    // Tag so zoom-tier bookkeeping can find the styled wrapper even when
+    // it's nested under a zero-sized anchor host (anchorPx mode).
+    ..setAttribute('data-fd-wrapper', '1');
   if (hasClassName) {
     wrapper.className = overlay.className!;
   }
@@ -709,6 +712,33 @@ web.Node? _buildAdvancedMarkerContent(
       badgeEl.style.backgroundColor = _getCssColor(badge.color!);
     }
     wrapper.appendChild(badgeEl);
+  }
+
+  // When [anchorPx] is set, nest the wrapper under a zero-sized host so
+  // gmaps' default bottom-center content anchor reduces to a single point at
+  // the lat/lng. The styled wrapper is absolutely positioned at
+  // (-anchorPx.dx, -anchorPx.dy) so its (anchorPx.dx, anchorPx.dy) lands on
+  // the lat/lng — no DOM measurement required.
+  //
+  // Also publish the anchor pixel as CSS custom properties on the wrapper so
+  // app stylesheets can derive `transform-origin` (and any other anchor-
+  // relative math) without repeating the numbers from Dart. Recommended:
+  //   transform-origin: var(--fd-anchor-x) var(--fd-anchor-y);
+  // — any scale/rotate/translate then pivots around the lat/lng pixel and
+  // the visible anchor stays planted under hover/selection animations.
+  final Offset? anchorPx = marker.anchorPx;
+  if (anchorPx != null) {
+    final host = web.document.createElement('div') as web.HTMLDivElement
+      ..style.position = 'relative'
+      ..style.width = '0'
+      ..style.height = '0';
+    wrapper.style.position = 'absolute';
+    wrapper.style.left = '${-anchorPx.dx}px';
+    wrapper.style.top = '${-anchorPx.dy}px';
+    wrapper.style.setProperty('--fd-anchor-x', '${anchorPx.dx}px');
+    wrapper.style.setProperty('--fd-anchor-y', '${anchorPx.dy}px');
+    host.appendChild(wrapper);
+    return host;
   }
 
   return wrapper;
@@ -900,12 +930,17 @@ Future<O> _markerOptionsFromMarker<T, O>(
   T? currentMarker,
 ) async {
   if (marker is AdvancedMarker) {
-    final web.Node? iconNode = await _advancedMarkerIconFromBitmapDescriptor(
-      marker.icon,
-      opacity: marker.alpha,
-      isVisible: marker.visible,
-      rotation: marker.rotation,
-    );
+    // When a webOverlay is supplied, the DOM tree replaces the bitmap entirely
+    // on web. Skip the (potentially expensive) bitmap build — mobile still
+    // uses [marker.icon] as its visible marker.
+    final web.Node? iconNode = marker.webOverlay != null
+        ? null
+        : await _advancedMarkerIconFromBitmapDescriptor(
+            marker.icon,
+            opacity: marker.alpha,
+            isVisible: marker.visible,
+            rotation: marker.rotation,
+          );
     final options = gmaps.AdvancedMarkerElementOptions()
       ..collisionBehavior = _markerCollisionBehaviorToGmCollisionBehavior(
         marker.collisionBehavior,

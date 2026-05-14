@@ -36,6 +36,7 @@ class AdvancedMarker extends Marker {
     int zIndex = 0,
     this.collisionBehavior = MarkerCollisionBehavior.requiredDisplay,
     this.webOverlay,
+    this.anchorPx,
   }) : super(zIndex: zIndex.toDouble());
 
   /// Indicates how the marker behaves when it collides with other markers.
@@ -43,7 +44,21 @@ class AdvancedMarker extends Marker {
 
   /// Web-only DOM overlay (label, badge, CSS class) composed on top of the
   /// marker icon. Ignored on mobile — bake desired visuals into [icon].
+  ///
+  /// When non-null on web, the bitmap [icon] is **not** rendered — the DOM
+  /// overlay replaces it. Mobile platforms continue to use [icon] as the
+  /// visible marker.
   final WebMarkerOverlay? webOverlay;
+
+  /// Web-only pixel-space offset from the geographic position to the wrapper
+  /// element's top-left (0, 0). When set, supersedes [anchor].
+  ///
+  /// Example: `anchorPx: Offset(30, 60)` places the lat/lng 30px from the
+  /// wrapper's left edge and 60px from its top. Predictable and avoids
+  /// runtime DOM measurement.
+  ///
+  /// Ignored on mobile.
+  final Offset? anchorPx;
 
   /// Creates a new [AdvancedMarker] object whose values are the same as this
   /// instance, unless overwritten by the specified parameters.
@@ -77,6 +92,7 @@ class AdvancedMarker extends Marker {
     MarkerCollisionBehavior? collisionBehaviorParam,
     double? altitudeParam,
     WebMarkerOverlay? webOverlayParam,
+    Offset? anchorPxParam,
   }) {
     return AdvancedMarker(
       markerId: markerId,
@@ -98,6 +114,7 @@ class AdvancedMarker extends Marker {
       clusterManagerId: clusterManagerIdParam ?? clusterManagerId,
       collisionBehavior: collisionBehaviorParam ?? collisionBehavior,
       webOverlay: webOverlayParam ?? webOverlay,
+      anchorPx: anchorPxParam ?? anchorPx,
     );
   }
 
@@ -148,7 +165,8 @@ class AdvancedMarker extends Marker {
         zIndex == other.zIndex &&
         clusterManagerId == other.clusterManagerId &&
         collisionBehavior == other.collisionBehavior &&
-        webOverlay == other.webOverlay;
+        webOverlay == other.webOverlay &&
+        anchorPx == other.anchorPx;
   }
 
   @override
