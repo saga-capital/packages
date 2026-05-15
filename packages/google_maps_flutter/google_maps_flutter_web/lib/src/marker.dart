@@ -374,6 +374,15 @@ class AdvancedMarkerController
     }
   }
 
+  /// Refresh only the [InfoWindow] content node without touching the marker
+  /// wrapper. Used by [AdvancedMarkersController] when an overlay snapshot
+  /// matches but the [InfoWindow] payload may have changed.
+  void _updateInfoWindowContent(web.HTMLElement content) {
+    if (_infoWindow != null) {
+      _infoWindow.content = content;
+    }
+  }
+
   @override
   void setMap(gmaps.Map map) => _marker?.map = map;
 }

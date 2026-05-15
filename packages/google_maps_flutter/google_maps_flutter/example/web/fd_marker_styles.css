@@ -505,3 +505,216 @@
   transform: scale(1.25);
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
 }
+
+/* --------------------------------------------------------------------------
+   customHtml demo — pill marker that combines a typed label slot with an
+   inline SVG glyph appended via WebMarkerOverlay.customHtml. Tone colour is
+   swapped through the bottom-level className (tone-coffee / tone-bolt /
+   tone-hospital), so the same glyph layout reads as a different category.
+   -------------------------------------------------------------------------- */
+.fd-custom-demo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 9999px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  background: #6b7280;
+}
+.fd-custom-demo__glyph {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+.fd-custom-demo__label {
+  position: static !important;
+  transform: none !important;
+  white-space: nowrap;
+}
+.fd-custom-demo.tone-coffee {
+  background: #8b5e34;
+}
+.fd-custom-demo.tone-bolt {
+  background: #0ea5e9;
+}
+.fd-custom-demo.tone-hospital {
+  background: #dc2626;
+}
+
+/* Buttons injected by customHtml in the custom-demo page. Tagged with
+   `data-fd-action`; a single delegated `click` listener installed by
+   customize forwards taps into Dart. */
+.fd-custom-demo__btn {
+  pointer-events: auto;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  font-size: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, transform 120ms ease;
+}
+.fd-custom-demo__btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(1.1);
+}
+.fd-custom-demo__btn:active {
+  transform: scale(0.92);
+}
+.fd-custom-demo.is-selected {
+  outline: 2px solid #fde047;
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   custom-demo: hover popup. The popup is appended into the wrapper by
+   customHtml, so moving the cursor from pill to popup does not trigger
+   mouseleave (it's still inside the wrapper's boundary). The popup itself is
+   absolutely positioned above the pill.
+   -------------------------------------------------------------------------- */
+.fd-custom-demo {
+  position: relative;
+}
+.fd-custom-demo.is-fav .fd-custom-demo__glyph::after {
+  content: '★';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #facc15;
+  color: #0f172a;
+  font-size: 9px;
+  line-height: 12px;
+  text-align: center;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.fd-custom-demo .fd-custom-demo__glyph {
+  position: relative;
+}
+.fd-popup {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  width: 240px;
+  background: white;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  pointer-events: auto;
+  z-index: 10;
+  /* Small downward arrow tail */
+}
+.fd-popup::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid white;
+}
+.fd-popup--loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-style: italic;
+  color: #64748b;
+}
+.fd-popup__spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  border-top-color: #0ea5e9;
+  animation: fd-popup-spin 700ms linear infinite;
+}
+@keyframes fd-popup-spin {
+  to { transform: rotate(360deg); }
+}
+.fd-popup__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.fd-popup__title {
+  font-weight: 700;
+  font-size: 13px;
+}
+.fd-popup__rating {
+  color: #ca8a04;
+  font-weight: 600;
+  font-size: 11px;
+}
+.fd-popup__row {
+  line-height: 1.35;
+}
+.fd-popup__row--muted {
+  color: #64748b;
+  font-size: 11px;
+}
+.fd-popup__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0;
+}
+.fd-popup__tag {
+  background: #e2e8f0;
+  color: #334155;
+  border-radius: 9999px;
+  font-size: 10px;
+  padding: 2px 8px;
+}
+.fd-popup__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.fd-popup__btn {
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #0f172a;
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.fd-popup__btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.fd-popup__btn.is-on {
+  background: #facc15;
+  border-color: #eab308;
+  color: #422006;
+  font-weight: 600;
+}

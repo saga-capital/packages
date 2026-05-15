@@ -119,6 +119,9 @@ class WebMarkerOverlay {
     this.className,
     this.rotation,
     this.zoomTiers,
+    this.customHtml,
+    this.customize,
+    this.customizeKey,
   });
 
   final WebMarkerLabel? label;
@@ -137,6 +140,30 @@ class WebMarkerOverlay {
   /// zoom level. The plugin tracks zoom changes and re-applies the highest
   /// matching tier without requiring app code to wire `onCameraMove`.
   final List<WebZoomTier>? zoomTiers;
+
+  /// Raw HTML inserted into the wrapper after the typed slots (label, badge).
+  /// Not sanitized — never interpolate untrusted input. Use for static SVG
+  /// glyphs, decorative spans, or anything expressible as a markup snippet.
+  final String? customHtml;
+
+  /// Imperative DOM customizer invoked on the wrapper element after all typed
+  /// slots and [customHtml] have been applied. The parameter is the
+  /// `web.HTMLElement` wrapper (declared as [Object] so this type stays pure
+  /// Dart); cast it on the call site in web code.
+  ///
+  /// Runs only on web; ignored on mobile. Re-fires only when the overlay
+  /// snapshot (including [customizeKey]) differs from the last applied one,
+  /// so the closure should treat each invocation as a fresh build against a
+  /// new wrapper element.
+  ///
+  /// The closure itself is excluded from [==] / [hashCode]. Bump
+  /// [customizeKey] when the captured state should trigger a refire.
+  final void Function(Object wrapper)? customize;
+
+  /// Equality key for [customize]. Treat like a React `key`: change it when
+  /// captured state (selection, hover, dataset version) should cause a
+  /// re-build. Compared via the value's own [==].
+  final Object? customizeKey;
 
   @override
   bool operator ==(Object other) {
@@ -162,7 +189,9 @@ class WebMarkerOverlay {
     return other.label == label &&
         other.badge == badge &&
         other.className == className &&
-        other.rotation == rotation;
+        other.rotation == rotation &&
+        other.customHtml == customHtml &&
+        other.customizeKey == customizeKey;
   }
 
   @override
@@ -172,5 +201,7 @@ class WebMarkerOverlay {
         className,
         rotation,
         zoomTiers == null ? null : Object.hashAll(zoomTiers!),
+        customHtml,
+        customizeKey,
       );
 }

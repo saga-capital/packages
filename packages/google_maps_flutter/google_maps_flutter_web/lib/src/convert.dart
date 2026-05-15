@@ -714,6 +714,21 @@ web.Node? _buildAdvancedMarkerContent(
     wrapper.appendChild(badgeEl);
   }
 
+  // Raw-HTML escape hatch: appended after typed slots so apps can layer
+  // additional markup (static SVG glyphs, decorative spans, etc.). Not
+  // sanitized — caller's responsibility.
+  final String? customHtml = overlay.customHtml;
+  if (customHtml != null && customHtml.isNotEmpty) {
+    wrapper.insertAdjacentHTML('beforeend', customHtml.toJS);
+  }
+
+  // Imperative escape hatch: runs last so the closure sees the fully-built
+  // wrapper (label, badge, customHtml all attached). The closure can mutate
+  // children, attach listeners, or append arbitrary nodes. It receives the
+  // styled wrapper — not the anchorPx host — so writes to `style` and
+  // `className` behave the same regardless of anchor mode.
+  overlay.customize?.call(wrapper);
+
   // When [anchorPx] is set, nest the wrapper under a zero-sized host so
   // gmaps' default bottom-center content anchor reduces to a single point at
   // the lat/lng. The styled wrapper is absolutely positioned at

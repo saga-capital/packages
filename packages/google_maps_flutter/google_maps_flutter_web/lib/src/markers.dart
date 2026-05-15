@@ -372,6 +372,13 @@ class AdvancedMarkersController
       <MarkerId, _ZoomTierBinding>{};
   StreamSubscription<void>? _zoomSub;
 
+  // Last-applied DOM-affecting snapshot per marker. When a `changeMarkers`
+  // call produces an equal snapshot, we skip rebuilding the wrapper element
+  // entirely — which both avoids DOM thrash and ensures the user-supplied
+  // `customize` closure does not refire on no-op updates. Other Marker fields
+  // (position, zIndex, draggable, etc.) still update normally in that path.
+  final Map<MarkerId, _AdvSnapshot> _lastSnapshot = <MarkerId, _AdvSnapshot>{};
+
   void _bindTier(Marker marker, {gmaps.AdvancedMarkerElement? element}) {
     if (marker is! AdvancedMarker) {
       return;
@@ -485,6 +492,7 @@ class AdvancedMarkersController
       },
     );
     _bindTier(marker, element: gmMarker);
+    _lastSnapshot[marker.markerId] = _AdvSnapshot.of(marker as AdvancedMarker);
     return controller;
   }
 
@@ -497,9 +505,62 @@ class AdvancedMarkersController
   }
 
   @override
+  Future<void> _changeMarker(Marker marker) async {
+    if (marker is! AdvancedMarker) {
+      return super._changeMarker(marker);
+    }
+    final MarkerController<gmaps.AdvancedMarkerElement,
+            gmaps.AdvancedMarkerElementOptions>? ctrl =
+        _markerIdToController[marker.markerId];
+    if (ctrl == null) {
+      return;
+    }
+    // Cluster reassignment forces a remove+re-add inside super; let it run
+    // and let `createMarkerController` repopulate the snapshot.
+    if (ctrl.clusterManagerId != marker.clusterManagerId) {
+      _lastSnapshot.remove(marker.markerId);
+      await super._changeMarker(marker);
+      return;
+    }
+    final _AdvSnapshot next = _AdvSnapshot.of(marker);
+    final _AdvSnapshot? prev = _lastSnapshot[marker.markerId];
+    if (prev != null && prev == next) {
+      // No DOM-affecting change — update non-DOM fields inline, skip wrapper
+      // rebuild and `customize` invocation.
+      final gmaps.AdvancedMarkerElement? gm = ctrl.marker;
+      if (gm != null) {
+        gm.position = gmaps.LatLng(
+          marker.position.latitude,
+          marker.position.longitude,
+        );
+        gm.zIndex = marker.zIndex;
+        gm.gmpDraggable = marker.draggable;
+        gm.title = sanitizeHtml(marker.infoWindow.title ?? '');
+        gm.collisionBehavior =
+            _markerCollisionBehaviorToGmCollisionBehavior(
+          marker.collisionBehavior,
+        );
+        // InfoWindow content lives outside the snapshot — always refresh.
+        final gmaps.InfoWindowOptions? infoWindow =
+            _infoWindowOptionsFromMarker(marker);
+        final web.HTMLElement? newInfoWindowContent =
+            infoWindow?.content as web.HTMLElement?;
+        if (newInfoWindowContent != null) {
+          (ctrl as AdvancedMarkerController)
+              ._updateInfoWindowContent(newInfoWindowContent);
+        }
+      }
+      return;
+    }
+    await super._changeMarker(marker);
+    _lastSnapshot[marker.markerId] = next;
+  }
+
+  @override
   void removeMarkers(Set<MarkerId> markerIdsToRemove) {
     for (final MarkerId id in markerIdsToRemove) {
       _disposeTierBinding(id);
+      _lastSnapshot.remove(id);
     }
     super.removeMarkers(markerIdsToRemove);
   }
@@ -511,4 +572,41 @@ class _ZoomTierBinding {
   final String baseClassName;
   // Sorted descending by minZoom — first match wins in [_applyTier].
   final List<WebZoomTier> tiers;
+}
+
+/// Snapshot of the DOM-affecting inputs to `_buildAdvancedMarkerContent`.
+/// Used to short-circuit no-op `changeMarkers` calls so that the wrapper
+/// element is preserved and the user `customize` closure does not refire.
+///
+/// `icon` is compared by identity rather than `==`: building a bitmap is
+/// async and side-effectful, so we only consider it "unchanged" when the
+/// caller literally reused the same `BitmapDescriptor` instance.
+@immutable
+class _AdvSnapshot {
+  const _AdvSnapshot({
+    required this.overlay,
+    required this.anchorPx,
+    required this.icon,
+  });
+
+  factory _AdvSnapshot.of(AdvancedMarker marker) => _AdvSnapshot(
+        overlay: marker.webOverlay,
+        anchorPx: marker.anchorPx,
+        icon: marker.icon,
+      );
+
+  final WebMarkerOverlay? overlay;
+  final Offset? anchorPx;
+  final BitmapDescriptor icon;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _AdvSnapshot &&
+      other.overlay == overlay &&
+      other.anchorPx == anchorPx &&
+      identical(other.icon, icon);
+
+  @override
+  int get hashCode =>
+      Object.hash(overlay, anchorPx, identityHashCode(icon));
 }
