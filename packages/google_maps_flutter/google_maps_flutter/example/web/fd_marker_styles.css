@@ -718,3 +718,177 @@
   color: #422006;
   font-weight: 600;
 }
+
+/* --------------------------------------------------------------------------
+   portal demo — pill markers + the three escape strategies (inside / portal
+   / popover). Pill is identical across strategies; only the popup placement
+   differs.
+   -------------------------------------------------------------------------- */
+.fd-portal-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  background: #6b7280;
+  position: relative;
+}
+.fd-portal-pill__label {
+  position: static !important;
+  transform: none !important;
+  white-space: nowrap;
+}
+.fd-portal-pill.tone-grey { background: #475569; }
+.fd-portal-pill.tone-violet { background: #6d28d9; }
+.fd-portal-pill.tone-emerald { background: #047857; }
+
+/* Popup card shared visual. Bottom-centre tip sits on the marker. */
+.fd-portal-card {
+  width: 220px;
+  background: white;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  pointer-events: none;
+}
+.fd-portal-card__head {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.fd-portal-card__body {
+  color: #334155;
+  line-height: 1.4;
+}
+.fd-portal-card__tip {
+  color: #94a3b8;
+  font-size: 10px;
+  margin-top: 6px;
+  text-align: center;
+}
+
+/* Strategy 1 — inside wrapper. Absolutely positioned above the pill.
+   Lives inside the map's overflow:hidden container → clipped at edge. */
+.fd-portal-card--inside {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+/* Strategy 2 — plugin portal on document.body. The plugin writes
+   --fd-marker-x/y/w/h on the portal element each time the map moves; CSS
+   does the centring math. Distinct violet accent to make the source obvious. */
+.fd-portal-card--portal {
+  left: calc(var(--fd-marker-x, 0px) + var(--fd-marker-w, 0px) / 2);
+  top: calc(var(--fd-marker-y, 0px) - 8px);
+  transform: translate(-50%, -100%);
+  border-top: 3px solid #6d28d9;
+}
+
+/* Strategy 3 — plugin popover in top layer. Same positioning vars; the
+   browser handles z-order via the top layer. `popover` resets margin/border
+   defaults, so position properties cover left/top via CSS vars. */
+.fd-portal-card--popover {
+  border: none;
+  left: calc(var(--fd-marker-x, 0px) + var(--fd-marker-w, 0px) / 2);
+  top: calc(var(--fd-marker-y, 0px) - 8px);
+  transform: translate(-50%, -100%);
+  border-top: 3px solid #047857;
+}
+
+/* --------------------------------------------------------------------------
+   placement demo — popup positioned by the plugin via --fd-popup-left/top
+   CSS variables. A `data-fd-placement` attribute reflects the resolved side
+   (above/below/left/right) so the tail/arrow points the right way.
+   -------------------------------------------------------------------------- */
+.fd-placement-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: #1f2937;
+  color: white;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+.fd-placement-pill__label {
+  position: static !important;
+  transform: none !important;
+  white-space: nowrap;
+}
+
+.fd-placement-card {
+  position: fixed;
+  left: var(--fd-popup-left, 0px);
+  top: var(--fd-popup-top, 0px);
+  width: 220px;
+  margin: 0;
+  border: none;
+  padding: 10px 12px;
+  background: white;
+  color: #0f172a;
+  border-radius: 8px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  pointer-events: auto;
+  border-top: 3px solid #0ea5e9;
+  z-index: 99999;
+}
+.fd-placement-card__head {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.fd-placement-card__body { color: #334155; }
+.fd-placement-card__body code {
+  background: #e2e8f0;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+/* Tail / arrow drawn via ::before; direction picked from data attribute. */
+.fd-placement-card__tail {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+}
+.fd-placement-card[data-fd-placement='above'] .fd-placement-card__tail {
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top: 6px solid white;
+}
+.fd-placement-card[data-fd-placement='below'] .fd-placement-card__tail {
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-bottom: 6px solid white;
+  border-top: none;
+}
+.fd-placement-card[data-fd-placement='left'] .fd-placement-card__tail {
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+  border-top: 6px solid white;
+}
+.fd-placement-card[data-fd-placement='right'] .fd-placement-card__tail {
+  left: -6px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  border-top: 6px solid white;
+}

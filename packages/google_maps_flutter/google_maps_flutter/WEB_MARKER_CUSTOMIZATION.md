@@ -10,6 +10,7 @@ visuals into the `BitmapDescriptor` for mobile.
 | `customHtml` | `String?` | Raw HTML appended into the wrapper after `label` / `badge` |
 | `customize` | `void Function(Object wrapper)?` | DOM mutator invoked with the wrapper element after everything else is in place |
 | `customizeKey` | `Object?` | Equality key — controls when the wrapper is rebuilt and `customize` re-fires |
+| `portal` | `WebMarkerPortal?` | Companion popup rendered outside the map container — escapes `overflow: hidden`, optionally enters the browser top layer |
 
 ---
 
@@ -203,3 +204,137 @@ Reference implementation:
   gmaps tap handler.
 - **Mobile builds compile the closure body.** Either guard with
   `kIsWeb`, or move web-only imports behind a conditional import.
+
+---
+
+# `WebMarkerPortal` — popups outside the map
+
+Marker DOM lives inside a clipped, transformed container (the gmaps map
+element). Anything you append inside the wrapper is clipped at the map edge
+and can't escape through `position: fixed`. `WebMarkerPortal` mounts a
+separate DOM node on `document.body` (or the browser **top layer** via the
+Popover API), and the plugin keeps its position in sync with the marker as
+the camera moves.
+
+| Field | Type | Default | What it does |
+|-------|------|---------|--------------|
+| `html` | `String` | required | Raw HTML for the portal element (unsanitized) |
+| `className` | `String?` | `null` | CSS class on the portal element |
+| `customize` | `void Function(Object portalEl)?` | `null` | DOM mutator on the portal element (event listeners, etc.) |
+| `customizeKey` | `Object?` | `null` | Closure equality key — same semantics as on `WebMarkerOverlay` |
+| `useTopLayer` | `bool` | `true` | Use Popover API top layer when available; falls back to plain portal |
+| `placement` | `WebMarkerPortalPlacement` | `auto` | `above` / `below` / `left` / `right` / `auto` |
+| `offset` | `double` | `8` | Gap between marker and popup, px |
+| `viewportMargin` | `double` | `8` | Minimum gap from popup to viewport edge, px |
+
+## How positioning works
+
+The plugin writes these CSS custom properties on the portal element each
+time the map moves, the window resizes, or the marker is updated:
+
+```
+--fd-marker-x   marker wrapper left,   viewport coords
+--fd-marker-y   marker wrapper top
+--fd-marker-w   marker wrapper width
+--fd-marker-h   marker wrapper height
+--fd-viewport-w window.innerWidth
+--fd-viewport-h window.innerHeight
+--fd-popup-w    portal element width
+--fd-popup-h    portal element height
+--fd-popup-left final clamped popup left,  viewport coords
+--fd-popup-top  final clamped popup top
+```
+
+It also sets a `data-fd-placement="above|below|left|right"` attribute
+indicating the resolved side (after `auto` flip + edge clamping).
+
+**Recommended app CSS** — let the plugin do the layout math:
+
+```css
+.my-portal {
+  position: fixed;
+  left: var(--fd-popup-left);
+  top:  var(--fd-popup-top);
+}
+.my-portal[data-fd-placement='above']::after { /* tail pointing down */ }
+.my-portal[data-fd-placement='below']::after { /* tail pointing up */ }
+```
+
+For hand-rolled layouts, ignore `--fd-popup-left/top` and use the
+lower-level marker + viewport vars directly.
+
+## Edge avoidance
+
+Two layers:
+
+1. **Side flip** — only applies to `placement: auto`. The plugin compares
+   the available room on each side of the marker and picks the side with
+   the most space.
+2. **Viewport clamp** — applies to every placement. After computing the
+   ideal popup top-left, the plugin clamps both coordinates inside the
+   viewport with `viewportMargin` padding. Forced sides (`above` etc.) do
+   not flip even when clamped, so the popup may overlap the marker if
+   there's no room on the chosen side.
+
+## Top layer vs plain portal
+
+`useTopLayer: true` (default) tries `showPopover()` first. When supported,
+the element enters the browser **top layer** — guaranteed to paint above
+every stacking context, regardless of ancestor transforms or
+`overflow: hidden`. This is the safest path for hover cards over a
+clipped map.
+
+Browser support: Chrome 114+, Safari 17.0+, Firefox 125+, Samsung
+Internet 25+, Chrome Android 114+, Safari iOS 17+. The plugin
+feature-detects `showPopover` and falls back to a plain `document.body`
+mount with `z-index: 99999` on older browsers — same CSS vars, same
+positioning math, same `data-fd-placement` attribute. Apps don't need to
+branch.
+
+## Lifecycle
+
+* App sets `portal` to non-null on the overlay → plugin mounts the node,
+  starts listening to `bounds_changed`, `zoom_changed`, and `resize`.
+* App sets `portal` to `null` (or replaces with a different config) →
+  plugin unmounts the previous node and remounts with the new config.
+* Marker removed → portal unmounted.
+* No portal active on any marker → event listeners detached.
+
+The portal config participates in `WebMarkerOverlay.==`, so the existing
+diff-skip system also covers it: same portal config + same other fields →
+the plugin does nothing.
+
+## Pattern D — Hover card outside the map
+
+Drives portal mount via Dart state. The hover state itself is wired
+through `customize` on the wrapper (mouseenter / mouseleave forwarders).
+
+```dart
+String? hoveredId;
+
+WebMarkerOverlay(
+  customizeKey: 'wrap:${marker.id}',
+  customize: kIsWeb ? (Object w) {
+    final el = w as web.HTMLElement;
+    el.addEventListener('mouseenter', ((web.Event _) {
+      setState(() => hoveredId = marker.id);
+    }).toJS);
+    el.addEventListener('mouseleave', ((web.Event _) {
+      setState(() => hoveredId = null);
+    }).toJS);
+  } : null,
+  portal: hoveredId == marker.id
+      ? WebMarkerPortal(
+          html: '<div class="card">…</div>',
+          className: 'my-portal',
+          placement: WebMarkerPortalPlacement.auto,
+        )
+      : null,
+)
+```
+
+Reference implementations:
+* [`example/lib/fork_marker_portal_demo.dart`](example/lib/fork_marker_portal_demo.dart)
+  — baseline (clipped) vs portal vs popover.
+* [`example/lib/fork_marker_placement_demo.dart`](example/lib/fork_marker_placement_demo.dart)
+  — switches between the five placements and demonstrates edge clamping.

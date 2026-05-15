@@ -8,6 +8,51 @@ import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platf
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('$WebMarkerPortal equality', () {
+    test('identical html/className/customizeKey/useTopLayer are equal', () {
+      const a = WebMarkerPortal(
+        html: '<p>hi</p>',
+        className: 'pp',
+        customizeKey: 'k1',
+      );
+      const b = WebMarkerPortal(
+        html: '<p>hi</p>',
+        className: 'pp',
+        customizeKey: 'k1',
+      );
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+
+    test('different html is not equal', () {
+      const a = WebMarkerPortal(html: '<p>a</p>');
+      const b = WebMarkerPortal(html: '<p>b</p>');
+      expect(a, isNot(equals(b)));
+    });
+
+    test('customize closure identity ignored when customizeKey matches', () {
+      void c1(Object _) {}
+      void c2(Object _) {}
+      final a = WebMarkerPortal(
+        html: '<p>hi</p>',
+        customize: c1,
+        customizeKey: 'k1',
+      );
+      final b = WebMarkerPortal(
+        html: '<p>hi</p>',
+        customize: c2,
+        customizeKey: 'k1',
+      );
+      expect(a, equals(b));
+    });
+
+    test('useTopLayer participates', () {
+      const a = WebMarkerPortal(html: '<p>x</p>');
+      const b = WebMarkerPortal(html: '<p>x</p>', useTopLayer: false);
+      expect(a, isNot(equals(b)));
+    });
+  });
+
   group('$WebMarkerOverlay equality', () {
     test('two overlays with identical fields are equal', () {
       const a = WebMarkerOverlay(
@@ -52,6 +97,20 @@ void main() {
       const a = WebMarkerOverlay(className: 'x');
       const b = WebMarkerOverlay(className: 'x');
       expect(a, equals(b));
+    });
+
+    test('portal participates in equality', () {
+      const a = WebMarkerOverlay(
+        portal: WebMarkerPortal(html: '<p>hi</p>', className: 'pp'),
+      );
+      const b = WebMarkerOverlay(
+        portal: WebMarkerPortal(html: '<p>hi</p>', className: 'pp'),
+      );
+      const c = WebMarkerOverlay(
+        portal: WebMarkerPortal(html: '<p>bye</p>', className: 'pp'),
+      );
+      expect(a, equals(b));
+      expect(a, isNot(equals(c)));
     });
 
     test('label/badge/className/rotation/zoomTiers still participate', () {

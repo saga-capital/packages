@@ -104,6 +104,112 @@ class WebZoomTier {
   int get hashCode => Object.hash(minZoom, className);
 }
 
+/// Placement of a [WebMarkerPortal] relative to its marker.
+///
+/// `auto` picks the side with the most viewport room. The four directional
+/// values force a side and do not flip — the plugin still clamps the popup
+/// inside the viewport, but the side is fixed.
+enum WebMarkerPortalPlacement { above, below, left, right, auto }
+
+/// Companion overlay rendered on `document.body` outside the map container.
+///
+/// Marker DOM lives inside a clipped, transformed container — popups that
+/// extend past the map edge are clipped. A [WebMarkerPortal] is mounted on
+/// `document.body` (or the browser's top layer via the Popover API when
+/// available), and its position is kept in sync with the marker wrapper as
+/// the camera moves.
+///
+/// The plugin writes four CSS custom properties on the portal element each
+/// frame:
+///
+///   --fd-marker-x  · viewport-x of the marker wrapper's left edge
+///   --fd-marker-y  · viewport-y of the marker wrapper's top edge
+///   --fd-marker-w  · marker wrapper width
+///   --fd-marker-h  · marker wrapper height
+///
+/// Application stylesheets reference them to position the popup, e.g.
+///
+///   .my-portal {
+///     position: fixed;
+///     left: calc(var(--fd-marker-x) + var(--fd-marker-w) / 2);
+///     top:  var(--fd-marker-y);
+///     transform: translate(-50%, -100%);
+///   }
+///
+/// Web only. Ignored by mobile renderers.
+@immutable
+class WebMarkerPortal {
+  const WebMarkerPortal({
+    required this.html,
+    this.className,
+    this.customize,
+    this.customizeKey,
+    this.useTopLayer = true,
+    this.placement = WebMarkerPortalPlacement.auto,
+    this.offset = 8.0,
+    this.viewportMargin = 8.0,
+  });
+
+  /// Raw HTML inserted into the portal element via `innerHTML`. Unsanitized
+  /// — never interpolate untrusted input.
+  final String html;
+
+  /// CSS class applied to the portal element. Equivalent to
+  /// [WebMarkerOverlay.className] but for the portal node.
+  final String? className;
+
+  /// Imperative DOM customizer invoked with the portal element after its
+  /// HTML and CSS variables are in place. Typed as [Object] so this type
+  /// stays pure Dart; cast to `web.HTMLElement` on the call site.
+  final void Function(Object portalElement)? customize;
+
+  /// Equality key for [customize]. Excluded from `==`. Bump it when the
+  /// closure's captured state should cause a re-mount.
+  final Object? customizeKey;
+
+  /// When true and the browser supports the Popover API (`showPopover`),
+  /// the portal element enters the browser's top layer — guaranteed to
+  /// paint above everything regardless of stacking context, transforms, or
+  /// `overflow: hidden` ancestors. When unsupported, falls back to
+  /// `position: fixed` on `document.body`.
+  final bool useTopLayer;
+
+  /// Where the popup sits relative to the marker. `auto` picks the side
+  /// with the most viewport room and flips when the chosen side would
+  /// overflow.
+  final WebMarkerPortalPlacement placement;
+
+  /// Gap in pixels between the marker edge and the popup edge.
+  final double offset;
+
+  /// Minimum gap between the popup and the viewport edge. The plugin clamps
+  /// the popup's final position so it never overflows the viewport by more
+  /// than this margin.
+  final double viewportMargin;
+
+  @override
+  bool operator ==(Object other) =>
+      other is WebMarkerPortal &&
+      other.html == html &&
+      other.className == className &&
+      other.customizeKey == customizeKey &&
+      other.useTopLayer == useTopLayer &&
+      other.placement == placement &&
+      other.offset == offset &&
+      other.viewportMargin == viewportMargin;
+
+  @override
+  int get hashCode => Object.hash(
+        html,
+        className,
+        customizeKey,
+        useTopLayer,
+        placement,
+        offset,
+        viewportMargin,
+      );
+}
+
 /// Web-only DOM overlay composed on top of an Advanced Marker icon.
 ///
 /// Mobile platforms ignore this field. Bake any label or badge directly into
@@ -122,6 +228,7 @@ class WebMarkerOverlay {
     this.customHtml,
     this.customize,
     this.customizeKey,
+    this.portal,
   });
 
   final WebMarkerLabel? label;
@@ -165,6 +272,10 @@ class WebMarkerOverlay {
   /// re-build. Compared via the value's own [==].
   final Object? customizeKey;
 
+  /// Companion DOM overlay rendered outside the map container. See
+  /// [WebMarkerPortal] for the positioning contract.
+  final WebMarkerPortal? portal;
+
   @override
   bool operator ==(Object other) {
     if (other is! WebMarkerOverlay) {
@@ -191,7 +302,8 @@ class WebMarkerOverlay {
         other.className == className &&
         other.rotation == rotation &&
         other.customHtml == customHtml &&
-        other.customizeKey == customizeKey;
+        other.customizeKey == customizeKey &&
+        other.portal == portal;
   }
 
   @override
@@ -203,5 +315,6 @@ class WebMarkerOverlay {
         zoomTiers == null ? null : Object.hashAll(zoomTiers!),
         customHtml,
         customizeKey,
+        portal,
       );
 }

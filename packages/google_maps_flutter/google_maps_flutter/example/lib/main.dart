@@ -16,6 +16,8 @@ import 'collision_behavior.dart';
 import 'fork_anchor_px_demo.dart';
 import 'fork_marker_custom_demo.dart';
 import 'fork_marker_features.dart';
+import 'fork_marker_placement_demo.dart';
+import 'fork_marker_portal_demo.dart';
 import 'fork_polyline_animation.dart';
 import 'fork_polyline_gradient_perf.dart';
 import 'ground_overlay.dart';
@@ -55,6 +57,8 @@ const String? _mapId = bool.hasEnvironment('GMAPS_MAP_ID')
 final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
   const ForkMarkerFeaturesPage(mapId: _mapId),
   const ForkMarkerCustomDemoPage(mapId: _mapId),
+  const ForkMarkerPortalDemoPage(mapId: _mapId),
+  const ForkMarkerPlacementDemoPage(mapId: _mapId),
   const ForkAnchorPxDemoPage(mapId: _mapId),
   const ForkPolylineAnimationPage(),
   const ForkPolylineGradientPerfPage(),

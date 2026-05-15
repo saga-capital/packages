@@ -379,6 +379,15 @@ class AdvancedMarkersController
   // (position, zIndex, draggable, etc.) still update normally in that path.
   final Map<MarkerId, _AdvSnapshot> _lastSnapshot = <MarkerId, _AdvSnapshot>{};
 
+  // Portal bookkeeping. One DOM node per marker that carries a [WebMarkerPortal],
+  // mounted on `document.body` (or the browser top layer via the Popover API
+  // when available). Positions are synced from the marker wrapper's
+  // viewport rect via four CSS custom properties — see `_syncPortal`.
+  final Map<MarkerId, _PortalBinding> _portals = <MarkerId, _PortalBinding>{};
+  StreamSubscription<void>? _portalBoundsSub;
+  StreamSubscription<void>? _portalZoomSub;
+  JSFunction? _portalResizeListener;
+
   void _bindTier(Marker marker, {gmaps.AdvancedMarkerElement? element}) {
     if (marker is! AdvancedMarker) {
       return;
@@ -455,6 +464,250 @@ class AdvancedMarkersController
     }
   }
 
+  // ---- Portal lifecycle ---------------------------------------------------
+
+  /// Reconciles the portal node for [marker] against [newPortal]. Mounts,
+  /// remounts, or removes as needed. Called from `createMarkerController`
+  /// and from the change path after a snapshot diff fires.
+  void _reconcilePortal(AdvancedMarker marker, WebMarkerPortal? newPortal,
+      {gmaps.AdvancedMarkerElement? element}) {
+    final _PortalBinding? existing = _portals[marker.markerId];
+    if (newPortal == null) {
+      if (existing != null) {
+        _unmountPortal(marker.markerId);
+      }
+      return;
+    }
+    final gmaps.AdvancedMarkerElement? gm =
+        element ?? _markerIdToController[marker.markerId]?.marker;
+    if (gm == null) {
+      return;
+    }
+    if (existing == null) {
+      _mountPortal(marker.markerId, newPortal, gm);
+      return;
+    }
+    if (existing.config == newPortal) {
+      // Same config — keep DOM node, just resync position in case the
+      // marker moved.
+      _syncPortal(marker.markerId);
+      return;
+    }
+    // Config differs — easiest is to tear down and remount. Could diff
+    // individual fields but portals are infrequent and HTML rebuilds are
+    // cheap.
+    _unmountPortal(marker.markerId);
+    _mountPortal(marker.markerId, newPortal, gm);
+  }
+
+  void _mountPortal(
+    MarkerId id,
+    WebMarkerPortal portal,
+    gmaps.AdvancedMarkerElement markerElement,
+  ) {
+    final el = web.document.createElement('div') as web.HTMLDivElement
+      ..innerHTML = portal.html.toJS
+      ..style.position = 'fixed'
+      ..style.margin = '0'
+      ..style.pointerEvents = 'auto'
+      ..setAttribute('data-fd-portal', id.value);
+    if (portal.className != null && portal.className!.isNotEmpty) {
+      el.className = portal.className!;
+    }
+    bool inTopLayer = false;
+    if (portal.useTopLayer) {
+      final JSObject js = el as JSObject;
+      if (js.hasProperty('showPopover'.toJS).toDart) {
+        el.setAttribute('popover', 'manual');
+        web.document.body!.append(el);
+        try {
+          js.callMethod('showPopover'.toJS);
+          inTopLayer = true;
+        } catch (_) {
+          // Some browsers may throw if the element isn't attached or another
+          // popover blocks. Fall through to the non-top-layer path below.
+        }
+      }
+    }
+    if (!inTopLayer) {
+      // Plain document.body mount — top layer not available or not requested.
+      web.document.body!.append(el);
+      // Ensure a generous z-index so the portal sits above standard UI.
+      el.style.zIndex = '99999';
+    }
+    _portals[id] = _PortalBinding(
+      element: el,
+      markerElement: markerElement,
+      config: portal,
+      inTopLayer: inTopLayer,
+    );
+    _syncPortal(id);
+    _ensurePortalSubs();
+    portal.customize?.call(el);
+    // The popup may not have laid out yet on the first synchronous sync —
+    // its `getBoundingClientRect()` returns 0×0, so placement math falls
+    // back to the marker position. Schedule a second sync on the next
+    // animation frame to pick up real dimensions.
+    web.window.requestAnimationFrame((double _) {
+      if (_portals.containsKey(id)) {
+        _syncPortal(id);
+      }
+    }.toJS);
+  }
+
+  void _unmountPortal(MarkerId id) {
+    final binding = _portals.remove(id);
+    if (binding == null) {
+      return;
+    }
+    if (binding.inTopLayer) {
+      final JSObject js = binding.element as JSObject;
+      if (js.hasProperty('hidePopover'.toJS).toDart) {
+        try {
+          js.callMethod('hidePopover'.toJS);
+        } catch (_) {
+          // Already hidden / detached — ignore.
+        }
+      }
+    }
+    binding.element.remove();
+    if (_portals.isEmpty) {
+      _portalBoundsSub?.cancel();
+      _portalBoundsSub = null;
+      _portalZoomSub?.cancel();
+      _portalZoomSub = null;
+      if (_portalResizeListener != null) {
+        web.window.removeEventListener('resize', _portalResizeListener);
+        _portalResizeListener = null;
+      }
+    }
+  }
+
+  void _ensurePortalSubs() {
+    _portalBoundsSub ??= googleMap.onBoundsChanged.listen((_) {
+      _syncAllPortals();
+    });
+    _portalZoomSub ??= googleMap.onZoomChanged.listen((_) {
+      _syncAllPortals();
+    });
+    _portalResizeListener ??= ((web.Event _) {
+      _syncAllPortals();
+    }).toJS;
+    web.window.addEventListener('resize', _portalResizeListener);
+  }
+
+  void _syncAllPortals() {
+    for (final MarkerId id in _portals.keys.toList()) {
+      _syncPortal(id);
+    }
+  }
+
+  void _syncPortal(MarkerId id) {
+    final binding = _portals[id];
+    if (binding == null) {
+      return;
+    }
+    // Walk to the styled wrapper inside the marker host (handles anchorPx
+    // mode where the host is zero-sized and the wrapper lives one level down).
+    final web.Node? content = binding.markerElement.content;
+    if (content == null || !content.isA<web.HTMLElement>()) {
+      return;
+    }
+    final web.HTMLElement root = content as web.HTMLElement;
+    web.HTMLElement wrapper = root;
+    if (!root.hasAttribute('data-fd-wrapper')) {
+      final web.Element? inner = root.querySelector('[data-fd-wrapper]');
+      if (inner != null && inner.isA<web.HTMLElement>()) {
+        wrapper = inner as web.HTMLElement;
+      }
+    }
+    final web.DOMRect mr = wrapper.getBoundingClientRect();
+    final web.HTMLDivElement el = binding.element;
+    final WebMarkerPortal cfg = binding.config;
+
+    // Low-level marker rect — apps may use these directly if they want a
+    // hand-rolled layout.
+    el.style.setProperty('--fd-marker-x', '${mr.left}px');
+    el.style.setProperty('--fd-marker-y', '${mr.top}px');
+    el.style.setProperty('--fd-marker-w', '${mr.width}px');
+    el.style.setProperty('--fd-marker-h', '${mr.height}px');
+
+    final double vw = web.window.innerWidth.toDouble();
+    final double vh = web.window.innerHeight.toDouble();
+    el.style.setProperty('--fd-viewport-w', '${vw}px');
+    el.style.setProperty('--fd-viewport-h', '${vh}px');
+
+    // Popup intrinsic size. On the very first sync the popup may not have
+    // laid out yet — `getBoundingClientRect` returns 0×0. The mount path
+    // queues a follow-up rAF sync that picks up the real dimensions.
+    final web.DOMRect pr = el.getBoundingClientRect();
+    final double pw = pr.width;
+    final double ph = pr.height;
+    el.style.setProperty('--fd-popup-w', '${pw}px');
+    el.style.setProperty('--fd-popup-h', '${ph}px');
+
+    // Pick effective placement. `auto` flips between above/below/left/right
+    // based on which side has the most room for the popup. The other four
+    // values are honoured as-is (but still clamped to the viewport).
+    WebMarkerPortalPlacement effective;
+    switch (cfg.placement) {
+      case WebMarkerPortalPlacement.auto:
+        final double roomAbove = mr.top;
+        final double roomBelow = vh - mr.bottom;
+        final double roomLeft = mr.left;
+        final double roomRight = vw - mr.right;
+        if (roomAbove >= ph + cfg.offset || roomBelow >= ph + cfg.offset) {
+          effective = roomAbove >= roomBelow
+              ? WebMarkerPortalPlacement.above
+              : WebMarkerPortalPlacement.below;
+        } else {
+          effective = roomLeft >= roomRight
+              ? WebMarkerPortalPlacement.left
+              : WebMarkerPortalPlacement.right;
+        }
+      case WebMarkerPortalPlacement.above:
+      case WebMarkerPortalPlacement.below:
+      case WebMarkerPortalPlacement.left:
+      case WebMarkerPortalPlacement.right:
+        effective = cfg.placement;
+    }
+    el.setAttribute('data-fd-placement', effective.name);
+
+    // Compute popup top-left.
+    double left;
+    double top;
+    switch (effective) {
+      case WebMarkerPortalPlacement.above:
+        left = mr.left + mr.width / 2 - pw / 2;
+        top = mr.top - ph - cfg.offset;
+      case WebMarkerPortalPlacement.below:
+        left = mr.left + mr.width / 2 - pw / 2;
+        top = mr.bottom + cfg.offset;
+      case WebMarkerPortalPlacement.left:
+        left = mr.left - pw - cfg.offset;
+        top = mr.top + mr.height / 2 - ph / 2;
+      case WebMarkerPortalPlacement.right:
+        left = mr.right + cfg.offset;
+        top = mr.top + mr.height / 2 - ph / 2;
+      case WebMarkerPortalPlacement.auto:
+        // Resolved above.
+        left = mr.left;
+        top = mr.top;
+    }
+
+    // Clamp inside viewport with the configured margin.
+    final double m = cfg.viewportMargin;
+    if (pw + m * 2 <= vw) {
+      left = left.clamp(m, vw - pw - m);
+    }
+    if (ph + m * 2 <= vh) {
+      top = top.clamp(m, vh - ph - m);
+    }
+
+    el.style.setProperty('--fd-popup-left', '${left}px');
+    el.style.setProperty('--fd-popup-top', '${top}px');
+  }
+
   @override
   Future<AdvancedMarkerController> createMarkerController(
     Marker marker,
@@ -492,7 +745,9 @@ class AdvancedMarkersController
       },
     );
     _bindTier(marker, element: gmMarker);
-    _lastSnapshot[marker.markerId] = _AdvSnapshot.of(marker as AdvancedMarker);
+    final AdvancedMarker am = marker as AdvancedMarker;
+    _lastSnapshot[marker.markerId] = _AdvSnapshot.of(am);
+    _reconcilePortal(am, am.webOverlay?.portal, element: gmMarker);
     return controller;
   }
 
@@ -549,11 +804,17 @@ class AdvancedMarkersController
           (ctrl as AdvancedMarkerController)
               ._updateInfoWindowContent(newInfoWindowContent);
         }
+        // Marker may have shifted position without changing the wrapper.
+        // Resync any active portal so it tracks the new screen location.
+        if (_portals.containsKey(marker.markerId)) {
+          _syncPortal(marker.markerId);
+        }
       }
       return;
     }
     await super._changeMarker(marker);
     _lastSnapshot[marker.markerId] = next;
+    _reconcilePortal(marker, marker.webOverlay?.portal);
   }
 
   @override
@@ -561,6 +822,7 @@ class AdvancedMarkersController
     for (final MarkerId id in markerIdsToRemove) {
       _disposeTierBinding(id);
       _lastSnapshot.remove(id);
+      _unmountPortal(id);
     }
     super.removeMarkers(markerIdsToRemove);
   }
@@ -572,6 +834,22 @@ class _ZoomTierBinding {
   final String baseClassName;
   // Sorted descending by minZoom — first match wins in [_applyTier].
   final List<WebZoomTier> tiers;
+}
+
+/// Live state for a mounted [WebMarkerPortal]. Kept alongside the marker so
+/// position sync can find the right wrapper on every camera event.
+class _PortalBinding {
+  _PortalBinding({
+    required this.element,
+    required this.markerElement,
+    required this.config,
+    required this.inTopLayer,
+  });
+
+  final web.HTMLDivElement element;
+  final gmaps.AdvancedMarkerElement markerElement;
+  final WebMarkerPortal config;
+  final bool inTopLayer;
 }
 
 /// Snapshot of the DOM-affecting inputs to `_buildAdvancedMarkerContent`.
