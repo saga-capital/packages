@@ -4,6 +4,7 @@
 
 // ignore_for_file: public_member_api_docs
 
+import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:flutter/foundation.dart';
@@ -68,23 +69,49 @@ class _ForkMarkerPlacementDemoBodyState
 
   WebMarkerPortalPlacement _placement = WebMarkerPortalPlacement.auto;
   String? _hoveredId;
+  // Shared dismiss timer. Cancelled whenever the cursor enters EITHER the
+  // marker wrapper or the portal element; armed whenever it leaves either.
+  // Net effect: the popup stays as long as the cursor is over one of the
+  // two regions, plus a small grace period covering the gap between them.
+  Timer? _dismissTimer;
+  static const Duration _closeDelay = Duration(milliseconds: 220);
 
-  void _onHover(String id, bool entering) {
-    setState(() {
-      _hoveredId = entering ? id : (_hoveredId == id ? null : _hoveredId);
+  @override
+  void dispose() {
+    _dismissTimer?.cancel();
+    super.dispose();
+  }
+
+  void _enter(String id) {
+    _dismissTimer?.cancel();
+    if (_hoveredId == id) {
+      return;
+    }
+    setState(() => _hoveredId = id);
+  }
+
+  void _leave(String id) {
+    _dismissTimer?.cancel();
+    _dismissTimer = Timer(_closeDelay, () {
+      if (mounted && _hoveredId == id) {
+        setState(() => _hoveredId = null);
+      }
     });
   }
 
-  void Function(Object) _wrapperBridge(String id) {
-    return (Object wrapperObj) {
-      final wrapper = wrapperObj as web.HTMLElement;
-      wrapper.addEventListener(
+  /// Attaches `mouseenter`/`mouseleave` listeners to either the wrapper or
+  /// the portal element. Same handler set on both — the shared timer ties
+  /// them into one logical hover region.
+  void Function(Object) _hoverBridge(String id) {
+    return (Object hostObj) {
+      final host = hostObj as web.HTMLElement;
+      host.addEventListener(
         'mouseenter',
-        ((web.Event _) => _onHover(id, true)).toJS,
+        ((web.Event _) => _enter(id)).toJS,
       );
-      wrapper.addEventListener(
+      host.addEventListener(
         'mouseleave',
-        ((web.Event _) => _onHover(id, false)).toJS,
+        ((web.Event _) => _leave(id)).toJS,
       );
     };
   }
@@ -110,7 +137,7 @@ class _ForkMarkerPlacementDemoBodyState
           ),
           className: 'fd-placement-pill${hovered ? ' is-hovered' : ''}',
           customizeKey: 'pl:${m.id}',
-          customize: kIsWeb ? _wrapperBridge(m.id) : null,
+          customize: kIsWeb ? _hoverBridge(m.id) : null,
           portal: hovered
               ? WebMarkerPortal(
                   html: _popupHtml(m.label),
@@ -118,6 +145,10 @@ class _ForkMarkerPlacementDemoBodyState
                   placement: _placement,
                   offset: 12,
                   viewportMargin: 12,
+                  // Same handlers on portal element — shared timer ties the
+                  // marker wrapper and the portal into one hover region.
+                  customize: kIsWeb ? _hoverBridge(m.id) : null,
+                  customizeKey: 'pl-portal:${m.id}',
                 )
               : null,
         ),

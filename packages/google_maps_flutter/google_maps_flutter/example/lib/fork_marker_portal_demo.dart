@@ -4,6 +4,7 @@
 
 // ignore_for_file: public_member_api_docs
 
+import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:flutter/foundation.dart';
@@ -99,27 +100,48 @@ class _ForkMarkerPortalDemoBodyState extends State<_ForkMarkerPortalDemoBody> {
   ];
 
   String? _hoveredId;
+  // Shared dismiss timer keeps the popup alive while the cursor traverses
+  // the gap between the marker wrapper and the portal (which is mounted on
+  // document.body, not as a child of the wrapper).
+  Timer? _dismissTimer;
+  static const Duration _closeDelay = Duration(milliseconds: 220);
 
-  void _onHover(String id, bool entering) {
-    setState(() {
-      _hoveredId = entering ? id : (_hoveredId == id ? null : _hoveredId);
+  @override
+  void dispose() {
+    _dismissTimer?.cancel();
+    super.dispose();
+  }
+
+  void _enter(String id) {
+    _dismissTimer?.cancel();
+    if (_hoveredId == id) {
+      return;
+    }
+    setState(() => _hoveredId = id);
+  }
+
+  void _leave(String id) {
+    _dismissTimer?.cancel();
+    _dismissTimer = Timer(_closeDelay, () {
+      if (mounted && _hoveredId == id) {
+        setState(() => _hoveredId = null);
+      }
     });
   }
 
-  // Wrapper-level customize: attaches mouseenter/leave listeners so the app
-  // can toggle `portal` on the hovered marker. Listeners are reattached when
-  // the snapshot changes (cheap; no leak — plugin replaces the wrapper, GC
-  // collects the old listener).
-  void Function(Object) _wrapperBridge(String id) {
-    return (Object wrapperObj) {
-      final wrapper = wrapperObj as web.HTMLElement;
-      wrapper.addEventListener(
+  /// Wires `mouseenter`/`mouseleave` on either the wrapper or the portal.
+  /// Same handler set on both → the dismiss timer absorbs the gap between
+  /// them and keeps the popup alive while the cursor is over either region.
+  void Function(Object) _hoverBridge(String id) {
+    return (Object hostObj) {
+      final host = hostObj as web.HTMLElement;
+      host.addEventListener(
         'mouseenter',
-        ((web.Event _) => _onHover(id, true)).toJS,
+        ((web.Event _) => _enter(id)).toJS,
       );
-      wrapper.addEventListener(
+      host.addEventListener(
         'mouseleave',
-        ((web.Event _) => _onHover(id, false)).toJS,
+        ((web.Event _) => _leave(id)).toJS,
       );
     };
   }
@@ -162,6 +184,8 @@ class _ForkMarkerPortalDemoBodyState extends State<_ForkMarkerPortalDemoBody> {
                   html: _popupHtml(m),
                   className: 'fd-portal-card fd-portal-card--portal',
                   useTopLayer: false,
+                  customize: kIsWeb ? _hoverBridge(m.id) : null,
+                  customizeKey: 'portal-demo-portal:${m.id}',
                 )
               : null;
         case _Mode.popover:
@@ -169,6 +193,8 @@ class _ForkMarkerPortalDemoBodyState extends State<_ForkMarkerPortalDemoBody> {
               ? WebMarkerPortal(
                   html: _popupHtml(m),
                   className: 'fd-portal-card fd-portal-card--popover',
+                  customize: kIsWeb ? _hoverBridge(m.id) : null,
+                  customizeKey: 'portal-demo-portal:${m.id}',
                 )
               : null;
       }
@@ -183,7 +209,7 @@ class _ForkMarkerPortalDemoBodyState extends State<_ForkMarkerPortalDemoBody> {
           className: 'fd-portal-pill $tone${hovered ? ' is-hovered' : ''}',
           customHtml: customHtml,
           customizeKey: 'portal-demo:${m.id}',
-          customize: kIsWeb ? _wrapperBridge(m.id) : null,
+          customize: kIsWeb ? _hoverBridge(m.id) : null,
           portal: portal,
         ),
       );

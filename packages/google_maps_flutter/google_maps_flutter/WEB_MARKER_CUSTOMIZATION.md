@@ -338,3 +338,68 @@ Reference implementations:
   — baseline (clipped) vs portal vs popover.
 * [`example/lib/fork_marker_placement_demo.dart`](example/lib/fork_marker_placement_demo.dart)
   — switches between the five placements and demonstrates edge clamping.
+
+## Hover bridge — keep the portal alive while the cursor moves into it
+
+The portal lives on `document.body`, not as a descendant of the marker
+wrapper. When the cursor crosses the `offset` gap between marker and
+popup, `mouseleave` fires on the wrapper instantly — without a buffer
+the popup would dismiss before the cursor lands on it.
+
+Wire the same `mouseenter` / `mouseleave` handlers on both the wrapper
+and the portal element, and share one timer:
+
+```dart
+String? hoveredId;
+Timer? dismissTimer;
+const closeDelay = Duration(milliseconds: 220);
+
+void enter(String id) {
+  dismissTimer?.cancel();
+  if (hoveredId == id) return;
+  setState(() => hoveredId = id);
+}
+
+void leave(String id) {
+  dismissTimer?.cancel();
+  dismissTimer = Timer(closeDelay, () {
+    if (mounted && hoveredId == id) setState(() => hoveredId = null);
+  });
+}
+
+void Function(Object) hoverBridge(String id) => (Object host) {
+      final el = host as web.HTMLElement;
+      el.addEventListener('mouseenter', ((web.Event _) => enter(id)).toJS);
+      el.addEventListener('mouseleave', ((web.Event _) => leave(id)).toJS);
+    };
+
+WebMarkerOverlay(
+  customize: kIsWeb ? hoverBridge(marker.id) : null,
+  portal: hoveredId == marker.id
+      ? WebMarkerPortal(
+          html: '...',
+          customize: kIsWeb ? hoverBridge(marker.id) : null,
+        )
+      : null,
+)
+```
+
+Behaviour:
+
+* Cursor on marker → `enter` fires, timer cancelled, popup mounts.
+* Cursor crosses gap → wrapper `mouseleave`, timer starts.
+* Cursor lands on popup before timer expires → `mouseenter` on portal
+  cancels the timer; popup stays.
+* Cursor leaves popup → `mouseleave` starts a fresh timer; popup
+  dismisses after `closeDelay`.
+* Cursor moves from popup back to marker → wrapper `mouseenter` cancels
+  the timer in flight.
+
+The portal element must accept pointer events for `mouseenter` /
+`mouseleave` to fire on it — add `pointer-events: auto` to the portal
+CSS class (the plugin sets it by default; reset child elements
+explicitly if you want clicks to pass through them).
+
+Tune `closeDelay` to taste. 150–250 ms covers an 8 px gap traversed at
+normal cursor speed. Below ~100 ms, fast cursor moves dismiss the popup
+before the user can act.
