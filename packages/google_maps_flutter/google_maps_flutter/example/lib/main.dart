@@ -21,6 +21,7 @@ import 'fork_marker_portal_demo.dart';
 import 'fork_polyline_animation.dart';
 import 'fork_polyline_dash_demo.dart';
 import 'fork_polyline_gradient_perf.dart';
+import 'fork_zones_paths_perf.dart';
 import 'ground_overlay.dart';
 import 'heatmap.dart';
 import 'lite_mode.dart';
@@ -64,6 +65,7 @@ final List<GoogleMapExampleAppPage> _allPages = <GoogleMapExampleAppPage>[
   const ForkPolylineAnimationPage(),
   const ForkPolylineDashDemoPage(),
   const ForkPolylineGradientPerfPage(),
+  const ForkZonesPathsPerfPage(mapId: _mapId),
   const MapUiPage(),
   const MapCoordinatesPage(),
   const MapClickPage(),
