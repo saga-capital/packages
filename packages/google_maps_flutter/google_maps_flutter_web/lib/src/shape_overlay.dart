@@ -16,6 +16,79 @@ String _nextPaintId(String prefix) {
   return '$prefix-$_paintIdSeed';
 }
 
+/// Tracks per-map interaction state (drag + zoom) for the animation
+/// managers so they can pause their RAF tick while the user is gesturing.
+///
+/// Refcounted: each animation registration `acquire`s its host map; the
+/// first acquire wires up `dragstart`/`dragend`/`zoom_changed`/`idle`
+/// listeners, the last `release` tears them down. Interaction state is
+/// shared across all animation managers (polyline gradient, polyline
+/// symbols, polygon paints) so we hook each map at most once regardless
+/// of how many animation channels are active.
+class _MapInteractionTracker {
+  _MapInteractionTracker._();
+  static final _MapInteractionTracker instance = _MapInteractionTracker._();
+
+  final Map<gmaps.Map, _MapInteractionState> _states =
+      <gmaps.Map, _MapInteractionState>{};
+
+  /// Increments the refcount on [map]. First caller wires the listeners.
+  void acquire(gmaps.Map map) {
+    final _MapInteractionState? existing = _states[map];
+    if (existing != null) {
+      existing.refs++;
+      return;
+    }
+    final state = _MapInteractionState(map: map);
+    _states[map] = state;
+    state.subscriptions.addAll(<StreamSubscription<void>>[
+      map.onDragstart.listen((_) => state.dragging = true),
+      map.onDragend.listen((_) => state.dragging = false),
+      // Each zoom step retriggers the timer; once zoom settles, `idle`
+      // fires once and clears the flag.
+      map.onZoomChanged.listen((_) {
+        state.zooming = true;
+      }),
+      map.onIdle.listen((_) {
+        state.zooming = false;
+        state.dragging = false;
+      }),
+    ]);
+  }
+
+  /// Decrements the refcount on [map]. Last caller tears the listeners
+  /// down so a long-lived page with short-lived overlays doesn't leak.
+  void release(gmaps.Map map) {
+    final _MapInteractionState? state = _states[map];
+    if (state == null) {
+      return;
+    }
+    state.refs--;
+    if (state.refs <= 0) {
+      for (final StreamSubscription<void> sub in state.subscriptions) {
+        sub.cancel();
+      }
+      _states.remove(map);
+    }
+  }
+
+  /// `true` when the user is mid-drag or mid-zoom on [map].
+  bool isInteracting(gmaps.Map map) {
+    final _MapInteractionState? state = _states[map];
+    return state != null && (state.dragging || state.zooming);
+  }
+}
+
+class _MapInteractionState {
+  _MapInteractionState({required this.map});
+  final gmaps.Map map;
+  int refs = 1;
+  bool dragging = false;
+  bool zooming = false;
+  final List<StreamSubscription<void>> subscriptions =
+      <StreamSubscription<void>>[];
+}
+
 /// Resolves a [WebOverlayPane] to the actual `<Element>` panes object
 /// returned by `gmaps.OverlayView.getPanes()`.
 web.Element _resolvePaneElement(gmaps.MapPanes panes, WebOverlayPane pane) {
@@ -303,8 +376,9 @@ void _animatePaintTarget({
 /// manager. Each tick the manager invokes the closure with the elapsed
 /// time so the overlay can update its own paints.
 class _AnimatedPaintSubscription {
-  _AnimatedPaintSubscription(this.tick);
+  _AnimatedPaintSubscription({required this.tick, this.map});
   final void Function(double elapsedSec) tick;
+  final gmaps.Map? map;
 }
 
 /// Shared RAF loop driving all shape-overlay paint animations. Both the
@@ -321,16 +395,25 @@ class _ShapePaintAnimationManager {
   double? _startMs;
   bool _visibilityHooked = false;
 
-  int register(void Function(double elapsedSec) tick) {
+  int register(
+    void Function(double elapsedSec) tick, {
+    gmaps.Map? map,
+  }) {
     final int handle = _next++;
-    _active[handle] = _AnimatedPaintSubscription(tick);
+    _active[handle] = _AnimatedPaintSubscription(tick: tick, map: map);
+    if (map != null) {
+      _MapInteractionTracker.instance.acquire(map);
+    }
     _ensureVisibilityHook();
     _start();
     return handle;
   }
 
   void unregister(int handle) {
-    _active.remove(handle);
+    final _AnimatedPaintSubscription? sub = _active.remove(handle);
+    if (sub?.map != null) {
+      _MapInteractionTracker.instance.release(sub!.map!);
+    }
     if (_active.isEmpty) {
       _stop();
     }
@@ -372,6 +455,10 @@ class _ShapePaintAnimationManager {
     _startMs ??= now;
     final double elapsedSec = (now - _startMs!) / 1000.0;
     for (final _AnimatedPaintSubscription sub in _active.values) {
+      if (sub.map != null &&
+          _MapInteractionTracker.instance.isInteracting(sub.map!)) {
+        continue;
+      }
       sub.tick(elapsedSec);
     }
     if (_active.isNotEmpty) {

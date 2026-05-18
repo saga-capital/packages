@@ -54,7 +54,7 @@ class PolylinesController extends GeometryController {
         _onPolylineMouseOutEdge(polyline.polylineId, pos, segmentIndex);
       },
     );
-    controller.setAnimation(polyline.webAnimation, polyline.color);
+    controller.setAnimation(polyline.webAnimation, polyline.color, map: googleMap);
     controller.setGradient(
       polyline.webGradient,
       polyline.points,
@@ -77,7 +77,7 @@ class PolylinesController extends GeometryController {
       _polylineOptionsFromPolyline(googleMap, polyline),
     );
     polylineController?.setPoints(polyline.points);
-    polylineController?.setAnimation(polyline.webAnimation, polyline.color);
+    polylineController?.setAnimation(polyline.webAnimation, polyline.color, map: googleMap);
     polylineController?.setGradient(
       polyline.webGradient,
       polyline.points,

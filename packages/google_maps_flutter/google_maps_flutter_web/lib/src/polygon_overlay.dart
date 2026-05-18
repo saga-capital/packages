@@ -36,7 +36,10 @@ class _PolygonShapeOverlay {
     ov.onRemove = _onRemove;
     ov.map = map as JSAny;
     _gmOverlay = ov;
+    _map = map;
   }
+
+  gmaps.Map? _map;
 
   void detach() {
     if (_animHandle != 0) {
@@ -67,6 +70,10 @@ class _PolygonShapeOverlay {
           ..style.left = '0'
           ..style.top = '0'
           ..style.pointerEvents = 'none'
+          // Scope style + layout recalc only — `contain: paint` would
+          // clip painting to the 0×0 root box (children rely on
+          // overflow:visible to render).
+          ..style.setProperty('contain', 'layout style')
           ..style.zIndex = '$zIndex';
 
     final web.Element svg = web.document.createElementNS(_shapeSvgNs, 'svg')
@@ -143,6 +150,7 @@ class _PolygonShapeOverlay {
             );
           }
         },
+        map: _map,
       );
     }
   }

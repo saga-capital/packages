@@ -11,6 +11,29 @@ const String _svgNs = 'http://www.w3.org/2000/svg';
 // `<linearGradient id="...">` per page lifetime.
 int _gradientIdSeed = 0;
 
+// Injected once per page. The `@keyframes` rule animates
+// `stroke-dashoffset` from 0 to `var(--fd-dash-period)`; each animated
+// path opts in via the `fd-dash-flow` class and configures direction +
+// duration via inline CSS variables. Runs on the browser's animation
+// thread — zero main-thread cost per frame.
+bool _dashFlowKeyframesInjected = false;
+void _ensureDashFlowKeyframes() {
+  if (_dashFlowKeyframesInjected) {
+    return;
+  }
+  _dashFlowKeyframesInjected = true;
+  final web.HTMLStyleElement style =
+      web.document.createElement('style') as web.HTMLStyleElement
+        ..textContent = '@keyframes fd-dash-flow { '
+            'to { stroke-dashoffset: calc(-1 * var(--fd-dash-period, 0px)); } '
+            '}\n'
+            '.fd-dash-flow { '
+            'animation: fd-dash-flow var(--fd-dash-duration, 1s) linear infinite; '
+            'animation-direction: var(--fd-dash-direction, normal); '
+            '}';
+  web.document.head!.appendChild(style);
+}
+
 /// Paints a polyline as an SVG `<path>` filled with a `<linearGradient>` on
 /// top of (or in place of) the underlying gmaps polyline.
 ///
@@ -63,7 +86,10 @@ class _PolylineGradientOverlay {
     overlay.onRemove = _onRemove;
     overlay.map = map as JSAny;
     _overlay = overlay;
+    _map = map;
   }
+
+  gmaps.Map? _map;
 
   void detach() {
     if (_animationHandle != 0) {
@@ -95,6 +121,12 @@ class _PolylineGradientOverlay {
           ..style.left = '0'
           ..style.top = '0'
           ..style.pointerEvents = 'none'
+          // Scope style + layout recalc to this overlay so an animated
+          // attribute change doesn't dirty sibling overlays' style. Use
+          // `layout style` — not `paint` — because the root div is 0×0
+          // (children rely on overflow:visible to paint outside it), and
+          // `contain: paint` would clip everything away.
+          ..style.setProperty('contain', 'layout style')
           ..style.zIndex = '$zIndex';
 
     // No viewBox — user coord = CSS pixel. overflow:visible lets the path
@@ -161,11 +193,44 @@ class _PolylineGradientOverlay {
 
     final double gradSpeed = gradient.animationSpeedPercentPerSecond ?? 0;
     final double dashSpeed = gradient.dashOffsetSpeedPxPerSecond ?? 0;
-    if (gradSpeed != 0 || dashSpeed != 0) {
+
+    // Dash flow goes to CSS @keyframes — runs on the browser's animation
+    // thread, no per-frame RAF tick from our side. Direction maps signed
+    // speed to `animation-direction: normal/reverse`. Negation: positive
+    // speed → flow start→end (`@keyframes` target is -period, so playing
+    // forward decreases offset, which visually progresses start→end on
+    // SVG).
+    if (dashSpeed != 0 && _dashPeriodPx > 0) {
+      _ensureDashFlowKeyframes();
+      final double durationSec = _dashPeriodPx / dashSpeed.abs();
+      path.classList.add('fd-dash-flow');
+      // `setProperty` on an SVG element's `style` uses the same CSSOM as
+      // HTMLElement — works on SVGElement too.
+      final web.CSSStyleDeclaration style =
+          (path as web.SVGElement).style;
+      style.setProperty(
+        '--fd-dash-period',
+        '${_dashPeriodPx.toStringAsFixed(2)}px',
+      );
+      style.setProperty(
+        '--fd-dash-duration',
+        '${durationSec.toStringAsFixed(3)}s',
+      );
+      style.setProperty(
+        '--fd-dash-direction',
+        dashSpeed > 0 ? 'normal' : 'reverse',
+      );
+    }
+
+    // Gradient slide still needs RAF (no clean CSS keyframe path for the
+    // SVG `gradientTransform` attribute). Dash flow handled by CSS above
+    // → only register RAF when the gradient itself is animated.
+    if (gradSpeed != 0) {
       _animationHandle = _GradientAnimationManager.instance.register(
         this,
         gradSpeed,
-        dashSpeed,
+        0, // dash now driven by CSS; tick should not also touch dashoffset
+        _map,
       );
     }
   }
@@ -338,7 +403,9 @@ String _linejoinName(WebStrokeLinejoin join) {
 
 /// Shared RAF loop driving the `gradientTransform` translation of every
 /// registered animated gradient. Self-stops when empty; auto-pauses on
-/// `document.hidden`.
+/// `document.hidden`. Per-map interaction state pauses the tick during
+/// `dragstart`/`zoom_changed` and resumes on `idle` so the animation does
+/// not compete with gmaps for main-thread time during user gestures.
 class _GradientAnimationManager {
   _GradientAnimationManager._();
 
@@ -355,20 +422,28 @@ class _GradientAnimationManager {
     _PolylineGradientOverlay overlay,
     double gradSpeedPct,
     double dashSpeedPx,
+    gmaps.Map? map,
   ) {
     final int handle = _nextHandle++;
     _active[handle] = _AnimatedGradient(
       overlay: overlay,
       gradSpeedPct: gradSpeedPct,
       dashSpeedPx: dashSpeedPx,
+      map: map,
     );
+    if (map != null) {
+      _MapInteractionTracker.instance.acquire(map);
+    }
     _ensureVisibilityHook();
     _start();
     return handle;
   }
 
   void unregister(int handle) {
-    _active.remove(handle);
+    final _AnimatedGradient? entry = _active.remove(handle);
+    if (entry?.map != null) {
+      _MapInteractionTracker.instance.release(entry!.map!);
+    }
     if (_active.isEmpty) {
       _stop();
     }
@@ -411,6 +486,12 @@ class _GradientAnimationManager {
     final double elapsedSec = (now - _startMs!) / 1000.0;
 
     for (final _AnimatedGradient entry in _active.values) {
+      // Skip overlays whose host map is mid-interaction (pan or zoom).
+      // The visual pause is acceptable — animation will catch up on idle.
+      if (entry.map != null &&
+          _MapInteractionTracker.instance.isInteracting(entry.map!)) {
+        continue;
+      }
       entry.overlay._applyAnimationTick(
         elapsedSec: elapsedSec,
         gradSpeedPct: entry.gradSpeedPct,
@@ -429,6 +510,7 @@ class _AnimatedGradient {
     required this.overlay,
     required this.gradSpeedPct,
     required this.dashSpeedPx,
+    required this.map,
   });
 
   final _PolylineGradientOverlay overlay;
@@ -436,4 +518,7 @@ class _AnimatedGradient {
   final double gradSpeedPct;
   /// `gradient.dashOffsetSpeedPxPerSecond`, or 0 when not animated.
   final double dashSpeedPx;
+  /// Host map — used to look up the interaction tracker so the tick can
+  /// pause when the user is panning or zooming.
+  final gmaps.Map? map;
 }

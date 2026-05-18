@@ -28,6 +28,7 @@ class _CircleShapeOverlay {
   _InstalledPaint? _fillPaint;
   _InstalledPaint? _strokePaint;
   int _animHandle = 0;
+  gmaps.Map? _map;
 
   void attach(gmaps.Map map) {
     final gmaps.OverlayView ov = gmaps.OverlayView();
@@ -36,6 +37,7 @@ class _CircleShapeOverlay {
     ov.onRemove = _onRemove;
     ov.map = map as JSAny;
     _gmOverlay = ov;
+    _map = map;
   }
 
   void detach() {
@@ -67,6 +69,9 @@ class _CircleShapeOverlay {
           ..style.left = '0'
           ..style.top = '0'
           ..style.pointerEvents = 'none'
+          // Scope style + layout recalc only — `contain: paint` would
+          // clip the 0×0 root box (children rely on overflow:visible).
+          ..style.setProperty('contain', 'layout style')
           ..style.zIndex = '$zIndex';
 
     final web.Element svg = web.document.createElementNS(_shapeSvgNs, 'svg')
@@ -141,6 +146,7 @@ class _CircleShapeOverlay {
             );
           }
         },
+        map: _map,
       );
     }
   }

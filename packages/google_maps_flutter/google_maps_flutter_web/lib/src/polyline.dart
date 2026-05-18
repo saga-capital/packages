@@ -105,7 +105,11 @@ class PolylineController {
 
   /// Registers (or replaces) a flowing-symbol animation for this polyline.
   /// Pass null to clear.
-  void setAnimation(WebPolylineAnimation? animation, Color polylineColor) {
+  void setAnimation(
+    WebPolylineAnimation? animation,
+    Color polylineColor, {
+    gmaps.Map? map,
+  }) {
     if (_animationHandle != 0) {
       _PolylineAnimationManager.instance.unregister(_animationHandle);
       _animationHandle = 0;
@@ -118,6 +122,7 @@ class PolylineController {
       poly,
       animation,
       polylineColor,
+      map: map,
     );
   }
 

@@ -20,22 +20,50 @@ class _PolylineAnimationManager {
   bool _visibilityHooked = false;
 
   /// Returns a handle the caller stores; pass it back to [unregister].
-  int register(gmaps.Polyline polyline, WebPolylineAnimation animation,
-      Color polylineColor) {
+  ///
+  /// The IconSequence, its Symbol, and the JSArray wrapping it are built
+  /// once at registration time and reused every tick. The tick mutates
+  /// `iconSequence.offset` in place and re-emits the same array reference
+  /// via `polyline.set('icons', ...)`, which triggers gmaps to re-render
+  /// without our code allocating new JS objects per frame.
+  int register(
+    gmaps.Polyline polyline,
+    WebPolylineAnimation animation,
+    Color polylineColor, {
+    gmaps.Map? map,
+  }) {
     final int handle = _nextHandle++;
+    final gmaps.Symbol symbol = _symbolForFlow(animation, polylineColor);
+    final gmaps.IconSequence sequence = gmaps.IconSequence(
+      icon: symbol,
+      offset: '0%',
+      repeat: animation.spacing,
+      fixedRotation: false,
+    );
+    final JSArray<gmaps.IconSequence> iconsArray =
+        <gmaps.IconSequence>[sequence].toJS;
     _active[handle] = _AnimatedPolyline(
       polyline: polyline,
       animation: animation,
       polylineColor: polylineColor,
       offset: 0,
+      iconSequence: sequence,
+      iconsArray: iconsArray,
+      map: map,
     );
+    if (map != null) {
+      _MapInteractionTracker.instance.acquire(map);
+    }
     _ensureVisibilityHook();
     _start();
     return handle;
   }
 
   void unregister(int handle) {
-    _active.remove(handle);
+    final _AnimatedPolyline? entry = _active.remove(handle);
+    if (entry?.map != null) {
+      _MapInteractionTracker.instance.release(entry!.map!);
+    }
     if (_active.isEmpty) {
       _stop();
     }
@@ -79,6 +107,12 @@ class _PolylineAnimationManager {
     _lastFrameMs = now;
 
     for (final _AnimatedPolyline entry in _active.values) {
+      // Pause IconSequence rebuilds during user interaction — gmaps needs
+      // every spare main-thread cycle for smooth pan/zoom on its side.
+      if (entry.map != null &&
+          _MapInteractionTracker.instance.isInteracting(entry.map!)) {
+        continue;
+      }
       final double signedSpeed =
           entry.animation.direction == WebFlowDirection.forward
               ? entry.animation.speedPercentPerSecond
@@ -87,12 +121,12 @@ class _PolylineAnimationManager {
       if (entry.offset < 0) {
         entry.offset += 100;
       }
-      final JSArray<gmaps.IconSequence> icons = _buildAnimatedIcons(
-        entry.animation,
-        entry.polylineColor,
-        entry.offset,
-      );
-      entry.polyline.set('icons', icons);
+      // Mutate the cached IconSequence's `offset` and re-emit the same
+      // array reference. gmaps re-reads on `set` regardless of value
+      // identity, so this triggers a redraw without per-tick JS
+      // allocation. Big saving for 100+ animated polylines.
+      entry.iconSequence.offset = '${entry.offset.toStringAsFixed(2)}%';
+      entry.polyline.set('icons', entry.iconsArray);
     }
 
     if (_active.isNotEmpty) {
@@ -107,27 +141,26 @@ class _AnimatedPolyline {
     required this.animation,
     required this.polylineColor,
     required this.offset,
+    required this.iconSequence,
+    required this.iconsArray,
+    required this.map,
   });
   final gmaps.Polyline polyline;
   final WebPolylineAnimation animation;
   final Color polylineColor;
   double offset;
-}
 
-/// Builds the gmaps.IconSequence array for a polyline animation frame.
-JSArray<gmaps.IconSequence> _buildAnimatedIcons(
-  WebPolylineAnimation animation,
-  Color polylineColor,
-  double offsetPercent,
-) {
-  final gmaps.Symbol symbol = _symbolForFlow(animation, polylineColor);
-  final gmaps.IconSequence sequence = gmaps.IconSequence(
-    icon: symbol,
-    offset: '${offsetPercent.toStringAsFixed(2)}%',
-    repeat: animation.spacing,
-    fixedRotation: false,
-  );
-  return <gmaps.IconSequence>[sequence].toJS;
+  /// IconSequence built once at register time. The tick mutates `.offset`
+  /// directly via the external setter on the binding.
+  final gmaps.IconSequence iconSequence;
+
+  /// JSArray<IconSequence> wrapping `iconSequence` — same reference every
+  /// tick. gmaps re-renders on `polyline.set('icons', ...)` even when the
+  /// array identity hasn't changed.
+  final JSArray<gmaps.IconSequence> iconsArray;
+
+  /// Host map, used to query [_MapInteractionTracker] for pause state.
+  final gmaps.Map? map;
 }
 
 gmaps.Symbol _symbolForFlow(
