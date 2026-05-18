@@ -48,6 +48,14 @@ class _PolylineGradientOverlay {
   double _animOffsetPx = 0;
   int _animationHandle = 0;
 
+  // Total length of one full dash period in CSS pixels. SVG's
+  // `stroke-dasharray` repeats every period; modulo by this value keeps
+  // the animated offset accumulator bounded so float precision does not
+  // drift over long-running animations. Odd-length arrays implicitly
+  // double per the SVG spec — `[5, 10, 15]` paints as `[5, 10, 15, 5,
+  // 10, 15]`, period 60.
+  double _dashPeriodPx = 0;
+
   void attach(gmaps.Map map) {
     final gmaps.OverlayView overlay = gmaps.OverlayView();
     overlay.onAdd = _onAdd;
@@ -126,6 +134,22 @@ class _PolylineGradientOverlay {
       ..setAttribute('stroke-width', strokeWidth.toStringAsFixed(1))
       ..setAttribute('stroke-linecap', _linecapName(gradient.strokeLinecap))
       ..setAttribute('stroke-linejoin', _linejoinName(gradient.strokeLinejoin));
+
+    final List<double>? dashArray = gradient.dashArray;
+    if (dashArray != null && dashArray.isNotEmpty) {
+      path.setAttribute(
+        'stroke-dasharray',
+        dashArray.map((double v) => v.toStringAsFixed(2)).join(' '),
+      );
+      double sum = 0;
+      for (final double v in dashArray) {
+        sum += v;
+      }
+      // SVG spec: odd-length arrays paint as the array concatenated with
+      // itself, so the visual period is 2*sum.
+      _dashPeriodPx = dashArray.length.isOdd ? sum * 2 : sum;
+    }
+
     svg.appendChild(path);
 
     root.appendChild(svg);
@@ -135,10 +159,14 @@ class _PolylineGradientOverlay {
     _path = path;
     _gradientEl = grad;
 
-    final double? speed = gradient.animationSpeedPercentPerSecond;
-    if (speed != null && speed != 0) {
-      _animationHandle =
-          _GradientAnimationManager.instance.register(this, speed);
+    final double gradSpeed = gradient.animationSpeedPercentPerSecond ?? 0;
+    final double dashSpeed = gradient.dashOffsetSpeedPxPerSecond ?? 0;
+    if (gradSpeed != 0 || dashSpeed != 0) {
+      _animationHandle = _GradientAnimationManager.instance.register(
+        this,
+        gradSpeed,
+        dashSpeed,
+      );
     }
   }
 
@@ -226,20 +254,35 @@ class _PolylineGradientOverlay {
     _gradientEl = null;
   }
 
-  /// Called by [_GradientAnimationManager] each RAF tick. Updates the
-  /// `gradientTransform` translation so the stops slide along the path
-  /// without retriggering a `draw()` reprojection.
-  void _applyAnimationOffsetPercent(double pct) {
-    if (_tileLen <= 0) {
-      return;
+  /// Called by [_GradientAnimationManager] each RAF tick with the seconds
+  /// elapsed since the manager started. Applies both the gradient-stops
+  /// slide (`gradientTransform`) and the dash-offset advance
+  /// (`stroke-dashoffset`) in a single pass so a registered overlay only
+  /// pays for one RAF callback regardless of how many animated channels
+  /// it uses.
+  void _applyAnimationTick({
+    required double elapsedSec,
+    required double gradSpeedPct,
+    required double dashSpeedPx,
+  }) {
+    if (gradSpeedPct != 0 && _tileLen > 0) {
+      double frac = (elapsedSec * gradSpeedPct) / 100.0;
+      frac = frac - frac.floor();
+      if (frac < 0) {
+        frac += 1.0;
+      }
+      _animOffsetPx = frac * _tileLen;
+      _writeGradientTransform();
     }
-    double frac = pct / 100.0;
-    frac = frac - frac.floor();
-    if (frac < 0) {
-      frac += 1.0;
+    if (dashSpeedPx != 0 && _dashPeriodPx > 0 && _path != null) {
+      // Increasing `stroke-dashoffset` shifts the pattern *opposite* to
+      // path traversal; negate so positive speed flows start→end as the
+      // API contract promises. Dart's `%` returns a non-negative result
+      // when the divisor is positive, so the value stays bounded inside
+      // `[0, _dashPeriodPx)` regardless of sign.
+      final double off = (-elapsedSec * dashSpeedPx) % _dashPeriodPx;
+      _path!.setAttribute('stroke-dashoffset', off.toStringAsFixed(2));
     }
-    _animOffsetPx = frac * _tileLen;
-    _writeGradientTransform();
   }
 
   void _writeGradientTransform() {
@@ -308,9 +351,17 @@ class _GradientAnimationManager {
   double? _startMs;
   bool _visibilityHooked = false;
 
-  int register(_PolylineGradientOverlay overlay, double speedPct) {
+  int register(
+    _PolylineGradientOverlay overlay,
+    double gradSpeedPct,
+    double dashSpeedPx,
+  ) {
     final int handle = _nextHandle++;
-    _active[handle] = _AnimatedGradient(overlay: overlay, speedPct: speedPct);
+    _active[handle] = _AnimatedGradient(
+      overlay: overlay,
+      gradSpeedPct: gradSpeedPct,
+      dashSpeedPx: dashSpeedPx,
+    );
     _ensureVisibilityHook();
     _start();
     return handle;
@@ -360,8 +411,11 @@ class _GradientAnimationManager {
     final double elapsedSec = (now - _startMs!) / 1000.0;
 
     for (final _AnimatedGradient entry in _active.values) {
-      final double pct = elapsedSec * entry.speedPct;
-      entry.overlay._applyAnimationOffsetPercent(pct);
+      entry.overlay._applyAnimationTick(
+        elapsedSec: elapsedSec,
+        gradSpeedPct: entry.gradSpeedPct,
+        dashSpeedPx: entry.dashSpeedPx,
+      );
     }
 
     if (_active.isNotEmpty) {
@@ -371,8 +425,15 @@ class _GradientAnimationManager {
 }
 
 class _AnimatedGradient {
-  _AnimatedGradient({required this.overlay, required this.speedPct});
+  _AnimatedGradient({
+    required this.overlay,
+    required this.gradSpeedPct,
+    required this.dashSpeedPx,
+  });
 
   final _PolylineGradientOverlay overlay;
-  final double speedPct;
+  /// `gradient.animationSpeedPercentPerSecond`, or 0 when not animated.
+  final double gradSpeedPct;
+  /// `gradient.dashOffsetSpeedPxPerSecond`, or 0 when not animated.
+  final double dashSpeedPx;
 }

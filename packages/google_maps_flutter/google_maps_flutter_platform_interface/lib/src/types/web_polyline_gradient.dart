@@ -26,6 +26,8 @@ class WebPolylineGradient {
     this.animationSpeedPercentPerSecond,
     this.repeatCount = 1,
     this.pane = WebOverlayPane.overlayLayer,
+    this.dashArray,
+    this.dashOffsetSpeedPxPerSecond,
   });
 
   /// Colour stops evenly spaced from 0% to 100% along the polyline.
@@ -61,6 +63,20 @@ class WebPolylineGradient {
   /// `floatPane` to render above markers.
   final WebOverlayPane pane;
 
+  /// Dash pattern applied to the gradient stroke, in CSS pixels. Maps
+  /// straight to SVG `stroke-dasharray` — odd-length arrays implicitly
+  /// repeat (`[5, 10, 15]` paints as `[5, 10, 15, 5, 10, 15]`). Null →
+  /// solid stroke. The browser computes dash offsets along the path's
+  /// arc length, so dashes follow polyline curves natively.
+  final List<double>? dashArray;
+
+  /// Animates the dash pattern by advancing `stroke-dashoffset` over time.
+  /// Positive values flow from path start → end; negative values flow
+  /// end → start. Speed is signed pixels of dash-pattern advance per
+  /// second. Null or zero → static dashes. Requires [dashArray] to be set
+  /// (an animated offset on a solid stroke has no visible effect).
+  final double? dashOffsetSpeedPxPerSecond;
+
   @override
   bool operator ==(Object other) {
     if (other is! WebPolylineGradient) {
@@ -74,12 +90,30 @@ class WebPolylineGradient {
         return false;
       }
     }
+    final List<double>? a = dashArray;
+    final List<double>? b = other.dashArray;
+    if (a == null || b == null) {
+      if (a != null || b != null) {
+        return false;
+      }
+    } else {
+      if (a.length != b.length) {
+        return false;
+      }
+      for (int i = 0; i < a.length; i++) {
+        if (a[i] != b[i]) {
+          return false;
+        }
+      }
+    }
     return other.strokeWidth == strokeWidth &&
         other.strokeLinecap == strokeLinecap &&
         other.strokeLinejoin == strokeLinejoin &&
         other.animationSpeedPercentPerSecond ==
             animationSpeedPercentPerSecond &&
-        other.repeatCount == repeatCount;
+        other.repeatCount == repeatCount &&
+        other.pane == pane &&
+        other.dashOffsetSpeedPxPerSecond == dashOffsetSpeedPxPerSecond;
   }
 
   @override
@@ -90,6 +124,9 @@ class WebPolylineGradient {
         strokeLinejoin,
         animationSpeedPercentPerSecond,
         repeatCount,
+        pane,
+        dashArray == null ? null : Object.hashAll(dashArray!),
+        dashOffsetSpeedPxPerSecond,
       );
 }
 
