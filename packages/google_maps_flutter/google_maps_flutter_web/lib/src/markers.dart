@@ -152,6 +152,11 @@ abstract class MarkersController<T extends Object, O>
           marker,
           markerController.marker,
         );
+        // Race guard: removeMarkers (or a remove+re-add) may have run during
+        // the await, leaving this controller stale.
+        if (_markerIdToController[marker.markerId] != markerController) {
+          return;
+        }
         final gmaps.InfoWindowOptions? infoWindow =
             _infoWindowOptionsFromMarker(marker);
         markerController.update(
@@ -813,6 +818,11 @@ class AdvancedMarkersController
       return;
     }
     await super._changeMarker(marker);
+    // Race guard: removeMarkers may have run during the await — don't
+    // reinstate snapshot/portal bookkeeping for a marker that's already gone.
+    if (_markerIdToController[marker.markerId] != ctrl) {
+      return;
+    }
     _lastSnapshot[marker.markerId] = next;
     _reconcilePortal(marker, marker.webOverlay?.portal);
   }
